@@ -2641,12 +2641,12 @@ void dynamic_mc_model::cost_function(const pw_alignment& p , double & m1 , doubl
 	}*/	
 	std::cout << "numkeep1 "<< numkeep1 << " numkeep2 "<< numkeep2 <<std::endl;
 	if(numkeep1 != 0){
-		m1=((costs12.cost_sum + alignment_base_cost.at(a1).at(a2))/100*numkeep1)-numkeep1;
+		m1=((costs12.cost_sum + alignment_base_cost.at(a1).at(a2))/100*numkeep1)-10*numkeep1;
 	}else{
 		m1= costs12.cost_sum + alignment_base_cost.at(a1).at(a2);
 	}
 	if(numkeep2 != 0){
-		m2=((costs21.cost_sum + alignment_base_cost.at(a2).at(a1))/100*numkeep2)-numkeep2;
+		m2=((costs21.cost_sum + alignment_base_cost.at(a2).at(a1))/100*numkeep2)-10*numkeep2;
 	}else{
 		m2=costs21.cost_sum + alignment_base_cost.at(a2).at(a1);
 	}

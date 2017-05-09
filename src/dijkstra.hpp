@@ -41,7 +41,7 @@ class dijkstra{//Edges weights are cost of creating them and nodes weight are co
 	void add_the_path(std::vector<size_t> & shortest_path);
 	private:
 	const all_data & data;
-	const dynamic_mc_model & model;
+	const dynamic_mc_model & model;//TODO can get removed!
 	std::multimap<const size_t,const size_t> adjacencies;
 	std::map<const size_t, double> al_distance;//distance from src to v
 	std::multimap<double, const size_t> distance_al;// distance from src to v of unvisited nodes, we remove those are visited.

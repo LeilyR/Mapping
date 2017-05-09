@@ -325,7 +325,7 @@ int do_read_map(int argc, char * argv[]){
 
 	typedef dynamic_mc_model use_model;
 //	typedef overlap_interval_tree<located_alignment> overlap_type;
-	if(argc < 7){ 
+	if(argc < 9){ 
 		std::cerr << "Program: map_read" << std::endl;
 		std::cerr << "Parameters:" << std::endl;
 		std::cerr << "* Ref(graph) gfa file ('nogfa' if not using gfa)" << std::endl;
@@ -333,12 +333,14 @@ int do_read_map(int argc, char * argv[]){
 		std::cerr << "* Read+Ref fasta file" << std::endl; //after running fasta_prepare on the original ref and read file(before fasta_prepare)
 		std::cerr << "* alignment maf file "<<std::endl; //I used LAST (make alignemnt between Ref.fasta and Read.fasta)
 		std::cerr << "* output maf file " << std::endl; 
+		std::cerr << "genomes and reads fasta "<<std::endl;
+		std::cerr << "genomes and reads maf file "<< std::endl;
 		std::cerr << "* num_threads(optional, defult is 1)" <<std::endl;
 		return 1;
 	}
 	size_t num_threads = 1;
-	if(argc ==9){
-		num_threads = std::atoi(argv[7]);
+	if(argc ==11){
+		num_threads = std::atoi(argv[9]);
 	}
 	std::string refgfa(argv[2]);
 	std::string refdotfile(argv[3]);
@@ -349,13 +351,22 @@ int do_read_map(int argc, char * argv[]){
 	output << "##maf version=1 " << std::endl;
 	output << "# Result of mapping over a graph " << std::endl;
 	output << "#" << std::endl;
+	std::string genomes_and_reads_fasta(argv[7]);
+	std::string genomes_and_reads_maf(argv[8]);
+	
+/*	all_data data1; //Just to test if model returns more reliable cost!
+	data1.read_fasta_maf_forward_read_only(genomes_and_reads_fasta, genomes_and_reads_maf);
+	wrapper wrap;
+	use_model m(data1,wrap, num_threads); //TODO take the wrapper out from the model!
+	m.train();*/
 
+	//--------------------
 	all_data data;
 //TODO read a fasta file containing genomes have been used in making graph and reads, alignments between full genomes and reads. Consider all the genomes as on accession and all the reads as an other accession
 	data.read_fasta_maf_forward_read_only(allfasta,alignmentmaf);//All the alignments are read in a way the 'read' reference (second ref) of it is forward.
 	wrapper wrap;
 	use_model m(data,wrap, num_threads); //TODO take the wrapper out from the model!
-
+//	model m(data);
 	m.train();
 
 	//TODO anthoer data object, read allfasta and alignmentmaf in here. use this object from this point on
@@ -368,16 +379,16 @@ int do_read_map(int argc, char * argv[]){
 	size_t ref_acc = data.accNumber(al.getreference1());
 	std::cout << "ref accession is " << ref_acc <<std::endl;
 	ref_accession = data.get_acc(ref_acc);
-#pragma omp parallel for num_threads(num_threads)
+/*#pragma omp parallel for num_threads(num_threads)
 	for(size_t i =0; i < data.numAlignments();i++){
-
+		std::cout << "al " << i << std::endl;
 		const pw_alignment & al = data.getAlignment(i);
 		assert(al.getbegin2() < al.getend2());
-	/*	if(i == 0){
-			size_t acc = data.accNumber(al.getreference1());
-			std::cout << "ref accession is " << acc <<std::endl;
-			ref_accession = data.get_acc(acc);
-		}*/
+	//	if(i == 0){
+	//		size_t acc = data.accNumber(al.getreference1());
+	//		std::cout << "ref accession is " << acc <<std::endl;
+	//		ref_accession = data.get_acc(acc);
+	//	}
 		double g1 ,g2;
 		m.gain_function(al,g1,g2);
 		double av_gain = (g1+g2)/2 ;
@@ -388,7 +399,7 @@ int do_read_map(int argc, char * argv[]){
 }
 		}
 	}
-
+*/
 //	std::map< std::string, size_t> longname2seqidx;
 //	longname2seqidx = data.getLongname2seqidx();
 //	std::cout<<longname2seqidx.size()<<std::endl;
@@ -405,24 +416,24 @@ int do_read_map(int argc, char * argv[]){
 	size_t acc;
 	size_t num = 0;
 	std::vector<std::vector<pw_alignment> > all_als;
-//	for(size_t i =0; i< data.numAlignments();i++){//Read all the als and fill in all_als vector with als of each read
-//		const pw_alignment & p = data.getAlignment(i);
-	for(std::set<const pw_alignment*, compare_pointer_pw_alignment>::iterator it = al_with_pos_gain.begin() ; it != al_with_pos_gain.end() ;it++){
-		const pw_alignment * p = *it;
-		size_t ref2 = p->getreference2(); 
-		if(it == al_with_pos_gain.begin()){
+	for(size_t i =0; i< data.numAlignments();i++){//Read all the als and fill in all_als vector with als of each read
+		const pw_alignment & p = data.getAlignment(i);
+//	for(std::set<const pw_alignment*, compare_pointer_pw_alignment>::iterator it = al_with_pos_gain.begin() ; it != al_with_pos_gain.end() ;it++){
+//		const pw_alignment * p = *it;
+		size_t ref2 = p.getreference2(); 
+		if(i == 0){
 			size_t acc2 = data.accNumber(ref2);
 			all_als.resize(data.getAcc(acc2).size());
 			std::cout<< "all_als size is "<<all_als.size()<<std::endl;
 		}
-		acc = data.accNumber(p->getreference1());
+		acc = data.accNumber(p.getreference1());
 		if(acc == 1){
-			all_als.at(ref2).push_back(*p);	
+			all_als.at(ref2).push_back(p);	
 		}else{
 			assert(acc == 0);
 			size_t num = data.get_seq_number_of_acc(acc);
 			std::cout<< "num "<< num<< "ref2 "<< ref2 <<std::endl;
-			all_als.at(ref2-num).push_back(*p);
+			all_als.at(ref2-num).push_back(p);
 		}
 	}
 	for(size_t i =0; i < all_als.size();i++){
@@ -436,7 +447,10 @@ int do_read_map(int argc, char * argv[]){
 //	for(size_t i =0; i < all_als.size();i++){
 	for(size_t i =0; i < 50;i++){
 		std::cout <<"read i  "<< i  <<std::endl;
-		const std::vector<pw_alignment> alignments = all_als.at(i);
+		std::vector<pw_alignment> alignments = all_als.at(i);
+	//	for(size_t j =0; j < 20; j++){
+	//		alignments.push_back(all_als.at(i).at(j));
+	//	}
 		dnastring current_read = data.getSequence(i);
 		size_t readacc = data.accNumber(i);
 		std::cout << "als size "<< alignments.size() <<std::endl;
@@ -453,7 +467,7 @@ int do_read_map(int argc, char * argv[]){
 		//	std::cout << data.get_seq_name(193)<< " " << data.get_seq_name(303) <<std::endl;
 			ccs.find_als_on_paths(output,acc,readacc);//It also calls dijkstra algorithm inside
 		}
-		exit(0); //XXX Temp
+	//	exit(0); //XXX Temp
 	}
 	std::cout << "done! "<<std::endl;
 

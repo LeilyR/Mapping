@@ -187,9 +187,12 @@ class als_components{
 	std::multiset<pw_alignment,sort_pw_alignment_by_left> find_successors(const pw_alignment & p , size_t &);
 	void get_subgraph(const pw_alignment &);
 	void look_for_successors_on_paths(size_t & comp, const pw_alignment& , std::set<int>& , std::multiset<pw_alignment,sort_pw_alignment_by_left> &);
+	void get_previous_als(size_t & comp , int & index, std::vector<pw_alignment> & pre_al, std::vector<size_t> & onread_from,size_t & to,size_t & ref_acc, size_t & read_acc);
+	void add_to_containers(size_t & comp , const pw_alignment & p1 , const pw_alignment & p2, size_t & refacc , size_t & readacc, int & current_name , int & next_name);
+	void add_nodes_to_the_graph(size_t & type, std::string & seq_from_read, std::string & seq_from_ref, size_t & refacc , size_t & readacc, pw_alignment & nw_alignment, unsigned int & read_id , unsigned int & ref_id,size_t & from, size_t & to);
 	void make_al_on_a_node(size_t & comp, const pw_alignment&, const pw_alignment& ,bool dir, unsigned int & ref1, size_t & left1, size_t & right1, unsigned int & ref2, size_t & left2, size_t & right2, size_t & refacc, size_t & readacc);
 	void get_paths(const std::set<int> & bfs_node , int & node_name , int & current_node_name, std::set<std::vector<int> > & paths);
-	void append_nodes(const std::set<int> & bfs_nodes , int & name, int & current_node_name, unsigned int & next_ref_id, unsigned int & current_ref_id, size_t & refacc , std::vector<std::vector<size_t> >& all_refs, std::vector<std::vector<int> >& all_paths, std::vector<std::string> & all_strings);
+	void append_nodes(const std::set<int> & bfs_nodes , int & name, int & current_node_name, unsigned int & next_ref_id, unsigned int & current_ref_id, size_t & refacc , std::vector<std::vector<size_t> >& all_refs, std::vector<std::vector<int> >& all_paths, std::vector<std::vector<std::string> >& all_strings);
 	void make_alignments(size_t & comp, size_t & begin_on_read, size_t & end_on_read, const pw_alignment & first_al, const pw_alignment & last_al, std::string & read_out, std::string & ref_out, std::vector<size_t> &this_refs, std::vector<int> & this_path, unsigned int & ref2, size_t & first_length, size_t & last_length,size_t &refacc,size_t&readacc);
 	void compute_samples(bool tillend, size_t node_length, size_t & current_pos, size_t & read_counter, size_t & ref_counter,std::string & read_in, std::string & read_out, std::string & ref_in, std::string & ref_out);
 	void get_reverse_complement(std::string & sequence_in , std::string & sequence_out);
@@ -220,9 +223,10 @@ class als_components{
 	//	std::vector<std::set<const pw_alignment*> >add_to_end;
 		std::vector<std::vector<size_t> > shortest_path;
 		std::vector< std::map<size_t , std::set<size_t> > >adjacencies; //from_al index , to_al index , vector goes over different components 
-		std::vector<std::multimap<const pw_alignment, size_t, compare_pw_alignment> >node_indices;//al and its index
+		std::vector<std::map<const pw_alignment, size_t, compare_pw_alignment> >node_indices;//al and its index
 		std::vector<std::map<std::pair<size_t,size_t>,double> >weight_of_edges; //Edges and their weight. In the case of exisitng adjacencies, weight is always the modification of the end node of an edge 
 		std::vector<std::multimap<size_t, const pw_alignment> >indices_nodes;
+		std::map<int , std::set<size_t> > alignments_on_each_ref_node; //keeps the index of each alignment is created on each node of the reference graph. int-->index from ref graph , size_t al_indices
 		size_t index;
 		size_t previous_right2;
 		size_t previous_right1;

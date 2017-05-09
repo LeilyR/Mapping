@@ -25,7 +25,7 @@
 		find_the_best_path(type,out_read,out_ref);
 	}
 	template<typename T>
-	void needleman<T>::compute_matrix(size_t & readacc, size_t & refacc){
+	void needleman<T>::compute_matrix(size_t & readacc, size_t & refacc){ //TODO this is also model dependent and changing in costs has be considered
 	//	size_t readacc = data.accNumber(read_id);
 	//	size_t refacc = data.accNumber(ref_id);
 		const std::map< std::string, std::vector<double> > model_cost = model.get_al_cost(refacc, readacc);
@@ -440,8 +440,8 @@
 		if(type == 1 || type == 2){//when both start and end or only the end is fixed. We need to start from the last cell in the matrix.
 			row = read.length();
 			column = ref.length();
-		}else{
-			assert(type ==3 || type == 4); //when the start on read is fixed but the end is not.
+		}else if( type == 4){
+		//	assert(type ==3 || type == 4); //when the start on read is fixed but the end is not.
 			//choose the smallest score on the last row
 			double min = score_matrix.at(read.length()).at(0);
 			column = 0;
@@ -454,6 +454,23 @@
 			}
 			row = read.length();
 			std::cout << "start here! "<<column<<std::endl;
+		}else{
+			assert(type == 3);
+			column = ref.length();
+//			column = 0;
+			double min = score_matrix.at(0).at(ref.length());
+			row = 0;
+			std::cout << "initial min "<< min <<std::endl;
+			for(size_t i =1; i < read.length()+1; i++){
+				std::cout << score_matrix.at(i).at(ref.length()) <<std::endl;
+				if(score_matrix.at(i).at(ref.length())<min){
+					min = score_matrix.at(i).at(ref.length());
+					std::cout << " i " << i << " min "<< min <<std::endl;
+					row = i;
+				} 
+			}
+			std::cout << "start at "<< row << " c " << column <<std::endl;
+
 		}
 	/*	if(type == 3 && column > 0){//XXX Get sure if it is necessary to keep the gap on read !
 			for(size_t i =ref.length()-1; i > column-1 ; i--){
@@ -505,8 +522,8 @@
 		std::reverse(from_ref.begin(), from_ref.end());
 		std::reverse(from_read.begin(), from_read.end());
 
-		std::cout<<from_ref <<std::endl;
-		std::cout << from_read<<std::endl;
+		std::cout<<"from ref " << from_ref <<std::endl;
+		std::cout<< "from read " << from_read<<std::endl;
 	}
 	template<typename T>
 	void needleman<T>::print_score_matrix(){
