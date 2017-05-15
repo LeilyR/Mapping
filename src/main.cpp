@@ -445,7 +445,8 @@ int do_read_map(int argc, char * argv[]){
 	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
 //	deep_first df(data, adjacencies);//Deep first search algorithm on reference graph nodes to finde sub graph of length MAXGAP
 //	for(size_t i =0; i < all_als.size();i++){
-	for(size_t i =0; i < 50;i++){
+	size_t i =1;
+//	for(size_t i =0; i < 2;i++){
 		std::cout <<"read i  "<< i  <<std::endl;
 		std::vector<pw_alignment> alignments = all_als.at(i);
 	//	for(size_t j =0; j < 20; j++){
@@ -467,8 +468,8 @@ int do_read_map(int argc, char * argv[]){
 		//	std::cout << data.get_seq_name(193)<< " " << data.get_seq_name(303) <<std::endl;
 			ccs.find_als_on_paths(output,acc,readacc);//It also calls dijkstra algorithm inside
 		}
-	//	exit(0); //XXX Temp
-	}
+//		exit(0); //XXX Temp
+//	}
 	std::cout << "done! "<<std::endl;
 
 
@@ -630,18 +631,19 @@ int do_test_reveal(int argc , char* argv[]){
 	if(argc< 3){
 		std::cerr<< "Program: test_reveal"<<std::endl;
 		std::cerr<< "*input: mapping maf file"<<std::endl;
-		std::cerr << "*input: textfile writen from reveal GFA" <<std::endl;
+		std::cerr << "*input: reveal GFA" <<std::endl;
 		return 1;
 	}
 
 	std::string maffile(argv[2]);
-	std::string txtfile(argv[3]);
+	std::string gfafile(argv[3]);
 	std::ifstream mafin(maffile.c_str());
-	std::ifstream txtin(txtfile.c_str());
+	std::ifstream gfain(gfafile.c_str());
 	test_reveal test;
-
+	
+	test.read_gfa(gfain);
 	test.read_the_result(mafin);
-	test.compare_with_path(txtin);
+	test.compare_with_reveal();
 
 }
 int check_reads(int argc, char* argv[]){

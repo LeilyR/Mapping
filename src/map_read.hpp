@@ -18,7 +18,8 @@ class ref_graph{
 	void add_adjacencies(std::string & , std::string & );
 	void add_predecessor(int & this_node , int & pre_node);
 	const std::map<int , std::set<int> > & get_adjacencies()const;
-	const std::vector<std::vector<int> > get_predecessor(unsigned int &, bool , size_t &)const;
+	std::set<std::vector<int> > get_predecessor(unsigned int &, bool , size_t &, size_t &);
+	void find_predecessors_bfs(int & startnode, std::string & refacc, size_t & left_on_ref, std::set<std::vector<int> > & pre_paths , size_t &);
 	const void look_for_predecessor(int & node , size_t & length , size_t & current_length, std::string & acc_name,std::set<int> & visited,std::vector<int> & this_pre_nodes, std::vector<std::vector<int> > & all_pre_nodes)const;
 	const std::vector<std::vector<int> > get_successor(unsigned int & ref_id, bool dir , size_t & length)const;
 	const void look_for_successor(int & node, size_t & length, size_t & current_length, std::string & acc_name, std::set<int> & visited, std::vector<int> & this_adjacencies, std::vector<std::vector<int> > & all_adjacencies)const;
@@ -184,6 +185,11 @@ class als_components{
 	For those which are not on those paths we check if their left is smaller than beginning of the current alignment component- MAXGAP/2, 
 	if so then we try to find the graph paths for it and go further otherwise discard it.*/
 	void find_als_on_paths(std::ofstream & output, size_t & refacc, size_t & readacc);
+	void finding_successors_on_subref(size_t & comp, const pw_alignment & current_al ,std::set<int>& nodes, std::multiset<pw_alignment,sort_pw_alignment_by_left> & neighbors);
+	void add_als(size_t & comp, size_t & refacc, size_t & readacc, std::vector<int> & path, std::vector<size_t> & refs, std::string & onref , std::string & onread, const pw_alignment & cur_al , const pw_alignment & nex_al, std::string & from_current, std::string & from_next);
+	void make_als(size_t & refacc, size_t & readacc, std::vector<int> & path, std::vector<size_t> & refs, std::string & onref , std::string & onread, std::vector<pw_alignment> & als, size_t & pos, size_t & cur_ref, size_t & nex_ref, std::string & from_current, std::string & from_next, size_t & readid, size_t & end_on_read_pos);
+	void get_al_samples(std::string & onref, std::string & onread, size_t & node_length , std::string & refout, std::string & readout, size_t & pos_on_read , bool & GAP);
+	void add_to_graph(size_t & comp, std::vector<pw_alignment> & als, const pw_alignment & cur_al , const pw_alignment & nex_al,size_t & refacc, size_t & readacc);
 	std::multiset<pw_alignment,sort_pw_alignment_by_left> find_successors(const pw_alignment & p , size_t &);
 	void get_subgraph(const pw_alignment &);
 	void look_for_successors_on_paths(size_t & comp, const pw_alignment& , std::set<int>& , std::multiset<pw_alignment,sort_pw_alignment_by_left> &);
@@ -200,10 +206,11 @@ class als_components{
 	void looking_for_first_al(size_t & ,const pw_alignment & p,size_t &);
 	void looking_for_last_al(size_t & ,const pw_alignment & p,size_t &);
 	double get_cost(const pw_alignment & p, size_t & acc1 , size_t & acc2);
+	void make_first_als(std::vector<int> & nodes , std::string & refout , std::string & readout, size_t & left_on_current_node,size_t & refacc, size_t & readacc, size_t & read_id,std::vector<pw_alignment> & first_als, size_t &);
 	void make_first_als(std::vector<int> & nodes , std::string & refout , std::string & readout , size_t & first_begin, size_t & last_end, std::string & seq_from_ref , size_t & left_on_current_node,size_t & refacc,size_t & read_id,size_t & current_node, std::vector<pw_alignment> & first_als);
 	void make_last_als(std::vector<int> & nodes , std::string & refout , std::string & readout , size_t & first_begin, size_t & last_end, std::string & seq_from_ref , size_t & right_on_current_node,size_t & refacc, size_t & read_id, size_t & current_node, std::vector<pw_alignment> & last_als);
 	const std::vector<pw_alignment> find_the_best_als(std::vector<std::vector<pw_alignment> >&, size_t & refacc, size_t & readacc)const;
-	void add_adjacencies(size_t & comp, const pw_alignment &, const pw_alignment &,size_t & read_acc, size_t & ref_acc);
+	void add_adjacencies(size_t & comp, const pw_alignment &, const pw_alignment &,size_t & ref_acc, size_t & read_acc);
 	void add_edge_to_begin(size_t & comp, const pw_alignment &,size_t & read_acc, size_t & ref_acc);
 	void add_edge_to_end(size_t & comp, const pw_alignment &);
 	void add_expensive_edges(size_t & comp,size_t & refacc, size_t & readacc);
@@ -226,7 +233,8 @@ class als_components{
 		std::vector<std::map<const pw_alignment, size_t, compare_pw_alignment> >node_indices;//al and its index
 		std::vector<std::map<std::pair<size_t,size_t>,double> >weight_of_edges; //Edges and their weight. In the case of exisitng adjacencies, weight is always the modification of the end node of an edge 
 		std::vector<std::multimap<size_t, const pw_alignment> >indices_nodes;
-		std::map<int , std::set<size_t> > alignments_on_each_ref_node; //keeps the index of each alignment is created on each node of the reference graph. int-->index from ref graph , size_t al_indices
+	//	std::map<std::vector<int> , size_t > alignments_on_each_ref_node; //keeps the index of each alignment is created on each node of the reference graph. int-->index from ref graph , size_t al_indices
+		std::map<int , std::set<size_t> > alignments_on_each_ref_node;
 		size_t index;
 		size_t previous_right2;
 		size_t previous_right1;
@@ -306,10 +314,14 @@ class test_reveal{
 	public:
 		test_reveal(){};
 		~test_reveal(){};
+		void read_gfa(std::ifstream & gfa);
 		void read_the_result(std::ifstream &);
+		void compare_with_reveal();
 		void compare_with_path(std::ifstream &);//TOO specific!!
 	private:
 		std::vector<std::string> nodes;
+		std::map<size_t , std::pair<size_t , size_t> >from_mapping_output; //for each read(name and direction, from-to on the ref) //TODO direction
+		std::map<size_t , std::pair<size_t, size_t> > ref_graph_nodes; //size_t is node name from gfa file and string is its content.
 };
 	
 #include "needleman_wunsch.cpp"

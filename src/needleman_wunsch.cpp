@@ -122,7 +122,8 @@
 						context +=(char) dnastring::base_to_index(ref.at(j-1));
 						std::map< std::string, std::vector<double>  >::const_iterator it= model_cost.find(context);
 						assert(it != model_cost.end());
-						double value = it->second.at(NUM_DELETE_DYN + 5);//keep of length 1
+					//	double value = it->second.at(NUM_DELETE_DYN + 5);//keep of length 1
+						double value = it->second.at(NUM_DELETE_DYN + 5)/100;//keep of length 1 //XXX Just a test
 						mod.push_back(value);//First save them localy, then the maximum is saved globaly
 						score.push_back(value+score_matrix.at(i-1).at(j-1));
 					//	std::cout<< "score "<< value << " + " << score_matrix.at(i-1).at(j-1)<<std::endl;
@@ -256,22 +257,24 @@
 			//	}
 			//	std::cout << " " <<std::endl;
 
-				//Keep the max of these three values
+				//Keep the max of these three values (minimum)
+			//	std::cout << "score size is "<<score.size()<<std::endl;
 				add_minimums(i,j,score,mod,temp_context,keepnumber,deletenumber, ifkeep);
+			//	std::cout<< "score matrix: "<<std::endl;
 			//	print_score_matrix();
 			//	std::cout << " "<<std::endl;
 			//	print_context_matrix();
 			}
 		}
-		if(ref.length()==1){
-			print_score_matrix();
-			std::cout << " "<<std::endl;
-			print_context_matrix();
-		}
+	//	if(ref.length()==1){
+	//		print_score_matrix();
+	//		std::cout << " "<<std::endl;
+	//		print_context_matrix();
+	//	}
 	}
 	template<typename T>
 	void needleman<T>::add_minimums(size_t & row , size_t & column , std::vector<double> & score , std::vector<double> & mod , std::vector<std::string> & context, size_t & keep , size_t & del, bool& ifkeep){
-		double score_min = score.at(0);
+		double score_min = score.at(0); 
 		size_t min =0;
 	//	std::cout<<"scores: "<<std::endl;
 		for(size_t i = 0; i < score.size();i++){
@@ -478,15 +481,17 @@
 				from_ref += ref.at(i);	
 			}
 		}*/
-		if(type == 2){
-			//set the first row to zero
+		if(type == 2){//XXX makes no sense in here! Doesn't change anything! TODO
+			//set the first row to zero 
 			for(size_t i =0; i < ref.length()+1; i++){
-				copy_score.at(0).at(0) = 0.0;
+				copy_score.at(0).at(i) = 0.0;
 			}
 		}
 		size_t last_part;
 		while(row != 0){
-		//	std::cout << path.size() << " " << path.at(0).size() <<" row "<< row << " column "<< column << std::endl;
+		//	if(type == 2){
+		//		std::cout << path.size() << " " << path.at(0).size() <<" row "<< row << " column "<< column << " " << path.at(row).at(column)<< std::endl;
+		//	}
 			last_part= path.at(row).at(column);
 			if(last_part == 1){
 			//	std::cout<< "match/mismatch"<<std::endl;
