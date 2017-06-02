@@ -19,19 +19,31 @@ class dijkstra{//Edges weights are cost of creating them and nodes weight are co
 		for(std::map<std::pair<size_t, size_t>, double>::const_iterator it = edges.begin(); it != edges.end(); it++){
 			std::pair<size_t , size_t> adj_nodes = it->first;
 			adjacencies.insert(it->first);
-			al_distance.insert(std::make_pair(it->first.first, dist));
-			al_distance.insert(std::make_pair(it->first.second, dist));
-			if(it->first.first != 0){
-				distance_al.insert(std::make_pair(dist,it->first.first));
+			std::map<const size_t, double>::iterator distance = al_distance.find(it->first.first);
+			std::cout << it->first.first <<std::endl;
+			if(distance == al_distance.end()){
+				std::cout << "add "<<std::endl;
+				al_distance.insert(std::make_pair(it->first.first, dist));
+				if(it->first.first != 0){
+					distance_al.insert(std::make_pair(dist,it->first.first));
+				}
+				unvisited.insert(it->first.first);
 			}
-			distance_al.insert(std::make_pair(dist,it->first.second));
-			unvisited.insert(it->first.first);
-			unvisited.insert(it->first.second);
+			std::cout << it->first.second<<std::endl;
+			distance = al_distance.find(it->first.second);
+			if(distance == al_distance.end()){
+				std::cout << "add! "<<std::endl;
+				al_distance.insert(std::make_pair(it->first.second, dist));		
+				distance_al.insert(std::make_pair(dist,it->first.second));
+				unvisited.insert(it->first.second);
+			}
 		}
 		std::map<const size_t, double>::iterator it = al_distance.find(srcnode);
 		assert(it != al_distance.end());
 		it->second = 0.0;
 		distance_al.insert(std::make_pair(0.0,srcnode));
+		std::cout << "distance al size " << distance_al.size() << " al distance size "<< al_distance.size() <<std::endl;
+		assert(distance_al.size() == al_distance.size());
 		
 	}
 	~dijkstra(){}

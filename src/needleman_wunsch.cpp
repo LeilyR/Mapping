@@ -123,7 +123,7 @@
 						std::map< std::string, std::vector<double>  >::const_iterator it= model_cost.find(context);
 						assert(it != model_cost.end());
 					//	double value = it->second.at(NUM_DELETE_DYN + 5);//keep of length 1
-						double value = it->second.at(NUM_DELETE_DYN + 5)/100;//keep of length 1 //XXX Just a test
+						double value = (it->second.at(NUM_DELETE_DYN + 5)/1111);//keep of length 1 //XXX Just a test
 						mod.push_back(value);//First save them localy, then the maximum is saved globaly
 						score.push_back(value+score_matrix.at(i-1).at(j-1));
 					//	std::cout<< "score "<< value << " + " << score_matrix.at(i-1).at(j-1)<<std::endl;
@@ -429,7 +429,7 @@
 		assert(it != model_cost.end());
 		for(size_t i = all_keeps.size(); i > 0; i--){
 			if(all_keeps.at(i-1) >=5+NUM_DELETE_DYN && all_keeps.at(i-1)<5+NUM_DELETE_DYN+NUM_KEEP_DYN){
-				keepcost += it->second.at((size_t)all_keeps.at(i-1));
+				keepcost += it->second.at((size_t)all_keeps.at(i-1))/1111; //XXX Just added as a test!
 			}
 			else break;
 		}
@@ -440,7 +440,7 @@
 		std::vector<std::vector<double> > copy_score = score_matrix;
 		std::cout << "read length "<< read.length() << " ref length "<< ref.length() << std::endl;
 		size_t row,column;
-		if(type == 1 || type == 2){//when both start and end or only the end is fixed. We need to start from the last cell in the matrix.
+		if(type == 1 || type == 2 || type == 5){//when both start and end or only the end is fixed. We need to start from the last cell in the matrix.
 			row = read.length();
 			column = ref.length();
 		}else if( type == 4){
@@ -488,6 +488,27 @@
 			}
 		}
 		size_t last_part;
+		if(type == 5){
+			while(column != 0){
+				last_part= path.at(row).at(column);
+				if(last_part == 1){
+					from_read += read.at(row-1);
+					from_ref += ref.at(column-1);
+					row--;
+					column--;
+				}
+				if(last_part == 2){
+					from_read += '-';
+					from_ref += ref.at(column-1);
+					column--;
+				}
+				if(last_part == 3){
+					from_read += read.at(row-1);
+					from_ref += '-';
+					row--;
+				}
+			}
+		}else{
 		while(row != 0){
 		//	if(type == 2){
 		//		std::cout << path.size() << " " << path.at(0).size() <<" row "<< row << " column "<< column << " " << path.at(row).at(column)<< std::endl;
@@ -523,6 +544,7 @@
 				from_ref += ref.at(column-1);
 				column--;
 			}
+		}
 		}
 		std::reverse(from_ref.begin(), from_ref.end());
 		std::reverse(from_read.begin(), from_read.end());

@@ -185,6 +185,8 @@ class als_components{
 	For those which are not on those paths we check if their left is smaller than beginning of the current alignment component- MAXGAP/2, 
 	if so then we try to find the graph paths for it and go further otherwise discard it.*/
 	void find_als_on_paths(std::ofstream & output, size_t & refacc, size_t & readacc);
+	void finding_successors_on_subref(size_t & comp, const pw_alignment & current_al ,std::set<int>& nodes, std::multiset<pw_alignment,sort_pw_alignment_by_left> & neighbors,size_t & refacc, size_t & readacc);
+	void find_best_path_to_neighbour(size_t comp,int & next_name, int & current_name,size_t & cur_index, const pw_alignment & cur_al, const pw_alignment & neighbour_al , size_t & to_on_read, size_t & last_pos_on_ref , size_t & refacc, size_t & readacc, std::set<int> & nodes_on_paths, std::set<std::pair<int, int> > & seen_path, std::map<std::pair<int, int> , std::pair<size_t, double> > & seen_indices, std::map<size_t , double> & weight);
 	void finding_successors_on_subref(size_t & comp, const pw_alignment & current_al ,std::set<int>& nodes, std::multiset<pw_alignment,sort_pw_alignment_by_left> & neighbors);
 	void add_als(size_t & comp, size_t & refacc, size_t & readacc, std::vector<int> & path, std::vector<size_t> & refs, std::string & onref , std::string & onread, const pw_alignment & cur_al , const pw_alignment & nex_al, std::string & from_current, std::string & from_next);
 	void make_als(size_t & refacc, size_t & readacc, std::vector<int> & path, std::vector<size_t> & refs, std::string & onref , std::string & onread, std::vector<pw_alignment> & als, size_t & pos, size_t & cur_ref, size_t & nex_ref, std::string & from_current, std::string & from_next, size_t & readid, size_t & end_on_read_pos);
@@ -205,6 +207,7 @@ class als_components{
 	void add_first_and_last_als(size_t & i, const pw_alignment & p, size_t & , size_t & );
 	void looking_for_first_al(size_t & ,const pw_alignment & p,size_t &);
 	void looking_for_last_al(size_t & ,const pw_alignment & p,size_t &);
+	void make_first_nw_als(size_t & comp, const pw_alignment & p ,std::set<std::vector<int> > & refs, std::string & seq_from_ref, unsigned int & read_id, size_t & read_from , size_t & read_to , size_t & read_acc, size_t & ref_acc);
 	double get_cost(const pw_alignment & p, size_t & acc1 , size_t & acc2);
 	void make_first_als(std::vector<int> & nodes , std::string & refout , std::string & readout, size_t & left_on_current_node,size_t & refacc, size_t & readacc, size_t & read_id,std::vector<pw_alignment> & first_als, size_t &);
 	void make_first_als(std::vector<int> & nodes , std::string & refout , std::string & readout , size_t & first_begin, size_t & last_end, std::string & seq_from_ref , size_t & left_on_current_node,size_t & refacc,size_t & read_id,size_t & current_node, std::vector<pw_alignment> & first_als);
@@ -232,7 +235,7 @@ class als_components{
 		std::vector< std::map<size_t , std::set<size_t> > >adjacencies; //from_al index , to_al index , vector goes over different components 
 		std::vector<std::map<const pw_alignment, size_t, compare_pw_alignment> >node_indices;//al and its index
 		std::vector<std::map<std::pair<size_t,size_t>,double> >weight_of_edges; //Edges and their weight. In the case of exisitng adjacencies, weight is always the modification of the end node of an edge 
-		std::vector<std::multimap<size_t, const pw_alignment> >indices_nodes;
+		std::vector<std::map<size_t, const pw_alignment> >indices_nodes;
 	//	std::map<std::vector<int> , size_t > alignments_on_each_ref_node; //keeps the index of each alignment is created on each node of the reference graph. int-->index from ref graph , size_t al_indices
 		std::map<int , std::set<size_t> > alignments_on_each_ref_node;
 		size_t index;
@@ -247,7 +250,9 @@ class als_components{
 
 class map_check{
 	public:
-	map_check(){}
+	map_check(){
+		error_counter = 0;
+	}
 	~map_check(){}
 	void read_graph_maf(std::ifstream & graph_maf);
 	void read_alignments(std::ifstream & alignments);//Read all the intial created alignments before mapping any read against a graph
@@ -290,6 +295,7 @@ class map_check{
 	std::map<int,std::pair<int, int> > non_aligned; //cluster id, pair(position, length)
 	std::map<unsigned int, unsigned int> node_length;
 	std::multimap<size_t , const pw_alignment> al_from_graph;
+	size_t error_counter;
 
 };
 

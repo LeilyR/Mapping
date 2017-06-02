@@ -9,28 +9,54 @@ void dijkstra::add_to_map(const size_t & from_node, const size_t & this_node, do
 	std::map<const size_t, double>::iterator it= al_distance.find(this_node);
 	assert(it != al_distance.end());
 	std::cout << "for the node "<< this_node <<"current " << cost << "prev cost "<< it->second <<std::endl;
+	if(this_node == 50){
+		std::cout << "on 50 before: "<<std::endl;
+		for(std::multimap<double, const size_t>::iterator it2=distance_al.begin() ; it2!= distance_al.end(); it2++){
+			if(it2->second == 50){
+				std::cout<< it2->first << " "<< it2->second <<std::endl;
+			}
+		}
+	}
+
 	if(cost<it->second){
-		std::cout << "here" <<std::endl;
-		std::multimap<double, const size_t>::iterator it1=distance_al.find(it->second);	//WRONG! CHANGE IT TO EQUAL RANGE AND FIND THE RIGHT NODE 
-		assert(it1 != distance_al.end());
+		std::cout << "here" << it->second <<std::endl;
+		std::multimap<double, const size_t>::iterator it1=distance_al.find(it->second);	
+		assert(it1 != distance_al.end());//TODO
+	//	if(it1 != distance_al.end()){
 		std::pair<std::multimap<double, const size_t>::iterator, std::multimap<double, const size_t>::iterator> findnode = distance_al.equal_range(it->second);
+		bool EXISTS = false;
 		for(std::multimap<double, const size_t>::iterator it2 = findnode.first; it2 != findnode.second; it2++){
 			if(it2->second == this_node){
 				distance_al.erase(it2);
 				distance_al.insert(std::make_pair(cost,this_node));
+				EXISTS = true;
 				break;
 			}
 	
 		}
+		assert(EXISTS == true);
 	//	distance_al.erase(it1);
 	//	distance_al.insert(std::make_pair(cost,this_node));
-	
+	//	}else{
+	//		distance_al.insert(std::make_pair(cost,this_node));			
+	//	}
 		it->second = cost;
 		std::map<const size_t , size_t>::iterator it2 = current_and_previous.find(this_node);
 		if(it2 == current_and_previous.end()){
+			std::cout << "got to " << this_node << " from " << from_node<<std::endl;
 			current_and_previous.insert(std::make_pair(this_node, from_node));
 		}else{
+			std::cout << "exists! "<<std::endl;
+			std::cout << "got to " << this_node << " from " << from_node<<std::endl;			
 			it2->second = from_node;
+		}
+	}
+	if(this_node == 50){
+		std::cout << "on 50 after: "<<std::endl;
+		for(std::multimap<double, const size_t>::iterator it2=distance_al.begin() ; it2!= distance_al.end(); it2++){
+			if(it2->second == 50){
+				std::cout<< it2->first << " "<< it2->second <<std::endl;
+			}
 		}
 	}
 
@@ -47,7 +73,7 @@ void dijkstra::find_shortest_path(size_t & first_left , size_t & last_right , st
 		if(unseen != unvisited.end()){
 			unvisited.erase(unseen);
 		}
-		std::cout<< "unvisited size1 "<<unvisited.size()<<std::endl;
+		std::cout<< "unvisited size1: "<<unvisited.size()<<std::endl;
 		distance_al.erase(it);
 		if(this_node!=1 && (unseen != unvisited.end())){
 			std::cout << "here!!"<<std::endl;
