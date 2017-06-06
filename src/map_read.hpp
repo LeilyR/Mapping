@@ -326,7 +326,7 @@ class test_reveal{
 		void compare_with_path(std::ifstream &);//TOO specific!!
 	private:
 		std::vector<std::string> nodes;
-		std::map<size_t , std::pair<size_t , size_t> >from_mapping_output; //for each read(name and direction, from-to on the ref) //TODO direction
+		std::multimap<size_t , std::pair<size_t , size_t> >from_mapping_output; //for each read(name and direction, from-to on the ref) //TODO direction
 		std::map<size_t , std::pair<size_t, size_t> > ref_graph_nodes; //size_t is node name from gfa file and string is its content.
 };
 	

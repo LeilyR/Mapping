@@ -1153,6 +1153,10 @@ void als_components::finding_successors_on_subref(size_t & comp, const pw_alignm
 			//			length += nex_l1;
 				//		std::cout << "-+l "<< length << std::endl;
 			//			if(length <= MAXGAP){
+						//	if(nex_name == 1068){
+						//		std::cout << this_p << std::endl;
+						//		std::cout << "---------------------"<<std::endl;
+						//	}
 							PATH.insert(this_p);
 							for(size_t i = 0; i < this_p.size();i++){
 								nodes_on_paths.insert(this_p.at(i));
@@ -1227,6 +1231,7 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 	unsigned int read_id = this_al.getreference2();
 	int startnode = current_name;
 	size_t from_on_read;
+	std::set<int> visited;
 	//Create the first al from the remaining part of the current node!
 
 	while(startnode!=next_name){
@@ -1256,7 +1261,7 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 		std::cout << "from on read "<< from_on_read << std::endl;
 		std::cout << "to on read "<<to_on_read <<std::endl;
 		bool END_REACHED = false;
-		for(std::set<int>::iterator it = adjs.begin() ; it != adjs.end() ; it++){ //TODO if *it == next_name
+	/*	for(std::set<int>::iterator it = adjs.begin() ; it != adjs.end() ; it++){ //TODO if *it == next_name
 			int this_name = *it;
 			if(this_name == next_name){
 				std::cout << "end reached! "<< startnode << " "<< this_name <<std::endl;
@@ -1265,8 +1270,13 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 				break;				
 			}
 		}
-		if(END_REACHED == false){
+		if(END_REACHED == false){*/
 		for(std::set<int>::iterator it = adjs.begin() ; it != adjs.end() ; it++){ //TODO if *it == next_name
+			std::set<int>::iterator vis = visited.find(*it);
+			if(vis != visited.end()){
+				std::cout << "visited! "<<std::endl;
+				continue;
+			}
 			std::vector<int> this_path;
 			this_path.push_back(startnode);
 			this_path.push_back(*it);
@@ -1293,7 +1303,7 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 				size_t ref_from = 0;
 				size_t ref_to = 0;
 				unsigned int ref_id;
-				assert(this_name != next_name);
+			//	assert(this_name != next_name);
 				if(this_name > 0){
 					ref_id = rgraph.get_refid(refacc,this_name);
 					if(this_name != next_name){
@@ -1349,12 +1359,19 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 						assert(this_to_on_read <= to_on_read);
 					}else{
 						this_to_on_read = data.getSequence(read_id).length();
+						if(from_on_read == to_on_read +1){//To deal with loops
+							std::cout << "add to visited "<< *it <<std::endl;
+							visited.insert(*it);
+						}
 					}
 					pw_alignment nwal(refout,readout,ref_from,from_on_read,ref_to,this_to_on_read,ref_id,read_id);
 					nextal = nwal;
+					if(this_name == next_name){
+						add_adjacencies(comp,nextal, neighbour_al , refacc, readacc);						
+					}
 				}else{
 					std::cout<<"shouldn't happen! "<<std::endl;
-					exit(0);
+				//	exit(0);
 					assert(this_name == next_name);
 					assert(NO_REMAINDER == true); 
 					if(readin.length()==0){
@@ -1364,7 +1381,8 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 						std::cout << "readin "<<readin << std::endl;
 						std::cout<<"gap on ref graph "<<std::endl;
 						pw_alignment onlygap_al(onlygap,readin,0,from_on_read,0,to_on_read,data.numSequences()+1,read_id);	
-						nextal = onlygap_al;			
+						nextal = onlygap_al;	
+						add_adjacencies(comp,nextal, neighbour_al , refacc, readacc);		
 					}
 				}
 				add_adjacencies(comp, this_al , nextal , refacc, readacc);	//TODO I can do it locally in here, and later on which ever is chosen be added to the alignment graph		
@@ -1452,7 +1470,7 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 			startnode = next_name;
 		}
 		al_distance.erase(al_distance.begin());
-	}
+//	}
 	}
 	//TODO The last al between read and and the remaining of the last node and the last node itself
 	assert(startnode ==next_name);
@@ -1468,9 +1486,9 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 			from_on_read = l2;
 		}
 
-	assert(from_on_read <= to_on_read+1);
-	std::cout << "from on read "<< from_on_read << std::endl;
+/*	std::cout << "from on read "<< from_on_read << std::endl;
 	std::cout << "to on read "<<to_on_read <<std::endl;
+	assert(from_on_read <= to_on_read+1);
 	size_t ref_from = 0;
 	size_t ref_to = 0;
 	pw_alignment remainder_al;
@@ -1521,7 +1539,7 @@ void als_components::find_best_path_to_neighbour(size_t comp, int & next_name, i
 			std::cout<< "THERE!! "<<std::endl;
 			add_adjacencies(comp, this_al , neighbour_al , refacc, readacc);	
 		}				
-	}
+	}*/
 	//	if(add_to_last == true){ //TODO Check the shortest path first and print it out, then if the last al is not the neighbour al add it to the path!
 //
 //	}
@@ -5029,7 +5047,7 @@ void test_reveal::read_the_result(std::ifstream & mapping_maf){ //Read the mappi
 					size_t from = read_id*30030 + read_pos;
 					size_t to = read_id*30030 + read_pos + al_length-1;
 					from_mapping_output.insert(std::make_pair(ref_id, std::make_pair(from,to)));
-				//	std::cout<< "on "<< ref_id << " from "<< from << " to " << to << std::endl;
+					std::cout<< "on "<< ref_id << " from "<< from << " to " << to << std::endl;
 
 				}
 			}
@@ -5046,16 +5064,17 @@ void test_reveal::compare_with_reveal(){
 	size_t error_begin = 0;
 	size_t error_end = 0;
 	bool ERROR = false;
-	for(std::map<size_t , std::pair<size_t,size_t> >::iterator it = from_mapping_output.begin() ; it != from_mapping_output.end() ; it++){
-		std::cout<< "on "<< it->first << " from "<< it->second.first << " to " << it->second.second << std::endl;
+	for(std::multimap<size_t , std::pair<size_t,size_t> >::iterator it = from_mapping_output.begin() ; it != from_mapping_output.end() ; it++){
+		std::cout<< "from mapping on "<< it->first << " from "<< it->second.first << " to " << it->second.second << std::endl;
 		std::map<size_t , std::pair<size_t,size_t> >::iterator it1 = ref_graph_nodes.find(it->first);
 		if(it1 != ref_graph_nodes.end()){
+			std::cout<< "from gfa file "<< it1->first << " from "<< it1->second.first << " to " << it1->second.second << std::endl;
 
 		}else{
 			std::cout << "ERROR! on ref"<<std::endl;
 			ERROR = true;
-			error_begin = it->second.first;
-			error_end = it->second.second;
+			error_begin = it->second.second - it->second.first;
+			error_end = 0;
 		}
 		if(it->second.first>= it1->second.first && it->second.first <= it1->second.second){
 			
@@ -5063,8 +5082,19 @@ void test_reveal::compare_with_reveal(){
 			std::cout << "ERROR!"<<std::endl;
 			if(ERROR == false){
 				ERROR = true;
-				error_begin = it->second.first;
-				error_end = it->second.second;
+				if(it->second.first < it1->second.first && it->second.first <= it1->second.second){
+					error_begin = std::abs(it->second.first - it1->second.first);
+					error_end = 0;
+				}
+				else if(it->second.first>= it1->second.first && it->second.first > it1->second.second){
+					error_end = std::abs(it->second.second-it1->second.second);
+					error_begin = 0;
+				}
+				else{
+					assert(it->second.first < it1->second.first && it->second.first > it1->second.second);
+					error_begin = std::abs(it->second.first - it1->second.first);
+					error_end = std::abs(it->second.second-it1->second.second);
+				}
 			}
 
 		}
@@ -5074,13 +5104,14 @@ void test_reveal::compare_with_reveal(){
 			std::cout << "ERROR! at end"<<std::endl;
 			if(ERROR == false){
 				ERROR = true;
-				error_begin = it->second.first;
-				error_end = it->second.second;
+				error_begin = it->second.second - it->second.first;
+				error_end = 0;
 			}
 
 		}
 		if(ERROR == true){
-			total_error_base += (error_end - error_begin);
+		//	total_error_base += (error_end - error_begin);
+			total_error_base += (error_end + error_begin);
 			ERROR = false;
 		}
 	}
