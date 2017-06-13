@@ -418,6 +418,7 @@ int do_read_map(int argc, char * argv[]){
 	std::vector<std::vector<pw_alignment> > all_als;
 	for(size_t i =0; i< data.numAlignments();i++){//Read all the als and fill in all_als vector with als of each read
 		const pw_alignment & p = data.getAlignment(i);
+	//	p.print();
 //	for(std::set<const pw_alignment*, compare_pointer_pw_alignment>::iterator it = al_with_pos_gain.begin() ; it != al_with_pos_gain.end() ;it++){
 //		const pw_alignment * p = *it;
 		size_t ref2 = p.getreference2(); 
@@ -444,9 +445,9 @@ int do_read_map(int argc, char * argv[]){
 //Goes through all the reads and for each of them find the best path using Dijkestra graph, the best path should be save in the output file
 	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
 //	deep_first df(data, adjacencies);//Deep first search algorithm on reference graph nodes to finde sub graph of length MAXGAP
-	for(size_t i =0; i < all_als.size();i++){
-//	size_t i =1;
-//	for(size_t i =85; i < all_als.size();i++){
+//	for(size_t i =0; i < all_als.size();i++){
+	size_t i =70;
+//	for(size_t i =100; i < all_als.size();i++){
 		std::cout <<"read i  "<< i  <<std::endl;
 		std::vector<pw_alignment> alignments = all_als.at(i);
 	//	for(size_t j =0; j < 20; j++){
@@ -469,7 +470,7 @@ int do_read_map(int argc, char * argv[]){
 			ccs.find_als_on_paths(output,acc,readacc);//It also calls dijkstra algorithm inside
 		}
 //		exit(0); //XXX Temp
-	}
+//	}
 	std::cout << "done! "<<std::endl;
 
 

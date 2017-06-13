@@ -57,7 +57,7 @@ class compute_overlapped_reads_avl {
 			//	std::cout << " getcc" << std::endl;
 				std::set< const pw_alignment*, compare_pointer_pw_alignment > cc;
 				get_cc_on_second_ref(*al, cc, seen);
-				std::cout << "FOUND CC size " << cc.size() << std::endl;
+			//	std::cout << "FOUND CC size " << cc.size() << std::endl;
 			//	for(std::set<const pw_alignment*,compare_pointer_pw_alignment>::const_iterator it = cc.begin(); it != cc.end();it++){
 			//		const pw_alignment * test = *it;
 			//		test->print();
