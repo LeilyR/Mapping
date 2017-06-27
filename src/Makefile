@@ -30,14 +30,14 @@ LIBARGS =   apclusterunix64.so -L../dlib_build -ldlib  libStatGen-1.0.13/libStat
 
 PROGS =  mapping
 
-OBJS = data.o needleman_wunsch.o map_read.o dijkstra.o 
+OBJS = data.o needleman_wunsch.o map_read.o dijkstra.o ref_graph.o test_mapping.o simple_NW_algo.o
 
 all: $(PROGS)
 
 
 
 
-mapping: main.cpp $(OBJS) pw_alignment.hpp data.hpp needleman_wunsch.hpp map_read.hpp alignment_index.hpp alignment_index.cpp intervals.hpp intervals.cpp needleman_wunsch.cpp dynamic_mc.hpp dynamic_mc.cpp
+mapping: main.cpp $(OBJS) pw_alignment.hpp data.hpp needleman_wunsch.hpp simple_NW_algo.hpp map_read.hpp ref_graph.hpp test_mapping.hpp alignment_index.hpp alignment_index.cpp intervals.hpp intervals.cpp needleman_wunsch.cpp dynamic_mc.hpp dynamic_mc.cpp
 	$(CXX) -o mapping $(CXXFLAGS) $(INCLUDEARGS) main.cpp $(OBJS) $(LIBARGS)
 	
 data.o: data.cpp pw_alignment.hpp data.hpp
@@ -56,12 +56,16 @@ dijkstra.o: dijkstra.hpp dijkstra.cpp
 map_read.o: map_read.cpp map_read.hpp
 	$(CXX) -o map_read.o $(CXXFLAGS) $(INCLUDEARGS) -c map_read.cpp
 
-#connected_component.o: connected_component.cpp connected_component.hpp
-#	$(CXX) -o connected_component.o $(CXXFLAGS) $(INCLUDEARGS) -c connected_component.cpp
+test_mapping.o: test_mapping.cpp test_mapping.hpp
+	$(CXX) -o test_mapping.o $(CXXFLAGS) $(INCLUDEARGS) -c test_mapping.cpp
 
 
-#model.o: model.cpp model.hpp
-#        $(CXX) -o model.o $(CXXFLAGS) $(INCLUDEARGS) -c model.cpp
+ref_graph.o: ref_graph.cpp ref_graph.hpp
+	$(CXX) -o ref_graph.o $(CXXFLAGS) $(INCLUDEARGS) -c ref_graph.cpp
+
+simple_NW_algo.o: simple_NW_algo.cpp simple_NW_algo.hpp
+	$(CXX) -o simple_NW_algo.o $(CXXFLAGS) $(INCLUDEARGS) -c simple_NW_algo.cpp
+
 
 clean:
 	@-rm -f $(PROGS) *.o  *.a *~

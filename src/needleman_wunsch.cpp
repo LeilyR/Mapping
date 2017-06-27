@@ -123,7 +123,7 @@
 						std::map< std::string, std::vector<double>  >::const_iterator it= model_cost.find(context);
 						assert(it != model_cost.end());
 					//	double value = it->second.at(NUM_DELETE_DYN + 5);//keep of length 1
-						double value = (it->second.at(NUM_DELETE_DYN + 5)/1111);//keep of length 1 //XXX Just a test
+						double value = ((it->second.at(NUM_DELETE_DYN + 5))/(1111*(NUM_DELETE_DYN + 5)));//keep of length 1 //XXX Just a test
 						mod.push_back(value);//First save them localy, then the maximum is saved globaly
 						score.push_back(value+score_matrix.at(i-1).at(j-1));
 					//	std::cout<< "score "<< value << " + " << score_matrix.at(i-1).at(j-1)<<std::endl;
@@ -148,6 +148,7 @@
 						std::string all_keeps;
 						size_t keepnum = keepnumber;
 						update_keep(keepnum, last_nonkeep_context, current_context , current_mod, all_keeps);//update the keep length return the current context.
+					//	std::cout << "all keeps "<< all_keeps <<std::endl;
 						context = previous_context;
 						context += (char) dnastring::base_to_index(ref.at(j-1));
 						std::map< std::string, std::vector<double> >::const_iterator it= model_cost.find(context);
@@ -429,10 +430,12 @@
 		assert(it != model_cost.end());
 		for(size_t i = all_keeps.size(); i > 0; i--){
 			if(all_keeps.at(i-1) >=5+NUM_DELETE_DYN && all_keeps.at(i-1)<5+NUM_DELETE_DYN+NUM_KEEP_DYN){
-				keepcost += it->second.at((size_t)all_keeps.at(i-1))/1111; //XXX Just added as a test!
+			//	std::cout << size_t(all_keeps.at(i-1))<< " ";
+				keepcost += (it->second.at((size_t)all_keeps.at(i-1)))/(2000*((size_t)all_keeps.at(i-1))); //XXX Just added as a test!
 			}
 			else break;
 		}
+	//	std::cout << " "<<std::endl;
 	}
 
 	template<typename T>
@@ -468,7 +471,7 @@
 				std::cout << score_matrix.at(i).at(ref.length()) <<std::endl;
 				if(score_matrix.at(i).at(ref.length())<min){
 					min = score_matrix.at(i).at(ref.length());
-					std::cout << " i " << i << " min "<< min <<std::endl;
+				//	std::cout << " i " << i << " min "<< min <<std::endl;
 					row = i;
 				} 
 			}

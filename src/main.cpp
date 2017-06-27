@@ -18,9 +18,13 @@
 #include "intervals.hpp"
 
 //Aligning reads:
+#include "simple_NW_algo.hpp"
 #include "needleman_wunsch.hpp"
 #include "dijkstra.hpp"
+#include "ref_graph.hpp"
 #include "map_read.hpp"
+#include "test_mapping.hpp"
+
 
 
 #define VERSION "0.0.1" 
@@ -224,6 +228,7 @@ int make_fasta_file(int argc, char* argv[]){
 		std::cerr<< "Parameters: "<<std::endl;
 		std::cerr << "* input: txt file"<<std::endl;
 		std::cerr << "* output: fasta file"<<std::endl;
+		return 1;
 	}
 	std::string textfile(argv[2]);
 	std::string fastafile(argv[3]);
@@ -240,7 +245,107 @@ int make_fasta_file(int argc, char* argv[]){
 	data.make_fasta(outs,sequence);
 	return 0;
 }
+int make_long_reads(int argc, char * argv[]){
+	if(argc < 3){
+		std::cerr<< "Program: sim_perfect_reads"<<std::endl;
+		std::cerr<< "Parameters: "<<std::endl;
+		std::cerr << "* input: genome fasta file "<<std::endl;
+		std::cerr << "* output: reads fasta file " << std::endl;
+		return 1;
+	}
+	std::string inputfastafile(argv[2]);
+	std::string outputfastafile(argv[3]);
 
+	std::ifstream fastain(inputfastafile.c_str());
+	std::map<std::string , std::string> contigs; // first string is the name, the second one is the sequence content
+	if(fastain) {
+		std::string str;
+		std::stringstream curseq;
+		std::string name;
+		std::string pre_name;
+		std::cout<<"check point "<<std::endl;
+		while(getline(fastain, str)){
+			if(str.at(0)=='>'){ //Separate with | keep the first two parts as its name
+				std::vector<std::string> parts;
+				strsep(str,"|",parts);
+				name = parts.at(1);
+				if(curseq.str().size()!=0){
+					contigs.insert(std::make_pair(pre_name,curseq.str()));
+					curseq.str("");
+				}else{
+					std::cerr << "Warning: A read of length zero is skipped " <<std::endl;
+				}
+			}
+			else {
+				curseq << str;
+				pre_name = name;
+			}
+		}
+		// store last reas
+		if(curseq.str().size()!=0){
+			contigs.insert(std::make_pair(pre_name,curseq.str()));
+		}else{
+			std::cerr << "Warning: A read of length zero is skipped " <<std::endl;
+		}
+		curseq.str("");
+		fastain.close();
+	} else {
+		std::cerr << "Error: cannot read " << std::endl;
+		exit(1);
+	}
+	std::multimap<std::string, std::string> reads; //name, content
+	for(std::map<std::string,std::string>::iterator it = contigs.begin() ; it != contigs.end() ; it++){
+		//Break the sequence into shorter pieces
+		std::string contig = it->second;
+		if(contig.length() > 15000){
+			std::cout << "long contig"<< it->first << std::endl;
+			for(size_t i = 0; i < contig.length()/15000 ; i++){
+				std::string this_read = contig.substr(i*15000, (i+1)*15000-1);
+				std::stringstream name;
+				name << it->first << "|" << i*15000<<"|"<<(i+1)*15000-1;
+				reads.insert(std::make_pair(name.str(),this_read));
+			}
+			std::string this_read = contig.substr((contig.length()/15000)*15000, contig.length()-1);
+			std::stringstream name;
+			name<< it->first << "|"<< (contig.length()/15000)*15000 << "|" << contig.length()-1;
+			reads.insert(std::make_pair(name.str(), this_read));
+
+		}else{
+			std::stringstream name;
+			name<<it->first<< "|" << 0 << "|" << contig.length()-1;
+			reads.insert(std::make_pair(name.str(),contig));
+		}
+	}
+	size_t count = 0;
+	std::ofstream fastaout(outputfastafile.c_str());
+
+	for(std::multimap<std::string, std::string>::iterator it = reads.begin() ; it != reads.end() ; it++){
+		size_t rest = 0;
+		fastaout<<">"<<count<< "|" << it->first <<std::endl;
+		count++;
+		if(it->second.length() > 70){
+			for(size_t i = 0; i < it->second.length()-70; i++){
+				for(size_t j = i; j < i+70;j++){
+					fastaout<<it->second.at(j);
+				}
+				i +=69;
+				rest = i+1;
+				fastaout<<std::endl;
+			}
+			size_t length = 0;
+			for(size_t i = rest ; i < it->second.length();i++){
+				fastaout<<it->second.at(i);
+				length++;
+			}
+			fastaout<<std::endl;
+			assert(length <= 70);
+		}else{
+			fastaout<<it->second<<std::endl;
+		}
+	}
+
+
+}
 int do_read_data(int argc, char * argv[]) {
 	if(argc < 4) {
 		usage();
@@ -248,6 +353,7 @@ int do_read_data(int argc, char * argv[]) {
 		std::cerr << "Parameters:" << std::endl;
 		std::cerr << "* fasta file from fasta_prepare" << std::endl;
 		std::cerr << "* maf file containing alignments of sequences contained in the fasta file" << std::endl;
+		return 1;
 
 	}
 	std::string fastafile(argv[2]);
@@ -277,6 +383,7 @@ int read_gfa(int argc, char * argv[]){
 		std::cerr<< "Input: GFA file"<<std::endl;
 		std::cerr <<"Output: fasta file"<<std::endl;
 		std::cerr<<"Output: text file"<<std::endl;
+		return 1;
 
 	}
 	std::string gfafile(argv[2]);
@@ -356,10 +463,12 @@ int do_read_map(int argc, char * argv[]){
 	
 /*	all_data data1; //Just to test if model returns more reliable cost!
 	data1.read_fasta_maf_forward_read_only(genomes_and_reads_fasta, genomes_and_reads_maf);
+	std::cout<< "data 1 numacc "<<data1.numAcc()<<std::endl;
 	wrapper wrap;
 	use_model m(data1,wrap, num_threads); //TODO take the wrapper out from the model!
-	m.train();*/
-
+	m.train();
+//	model m(data1);
+//	m.train();*/
 	//--------------------
 	all_data data;
 //TODO read a fasta file containing genomes have been used in making graph and reads, alignments between full genomes and reads. Consider all the genomes as on accession and all the reads as an other accession
@@ -379,18 +488,21 @@ int do_read_map(int argc, char * argv[]){
 	size_t ref_acc = data.accNumber(al.getreference1());
 	std::cout << "ref accession is " << ref_acc <<std::endl;
 	ref_accession = data.get_acc(ref_acc);
-/*#pragma omp parallel for num_threads(num_threads)
+#pragma omp parallel for num_threads(num_threads)
 	for(size_t i =0; i < data.numAlignments();i++){
 		std::cout << "al " << i << std::endl;
 		const pw_alignment & al = data.getAlignment(i);
 		assert(al.getbegin2() < al.getend2());
+		size_t read_acc = data.accNumber(al.getreference2());
 	//	if(i == 0){
 	//		size_t acc = data.accNumber(al.getreference1());
 	//		std::cout << "ref accession is " << acc <<std::endl;
 	//		ref_accession = data.get_acc(acc);
 	//	}
 		double g1 ,g2;
-		m.gain_function(al,g1,g2);
+		std::cout << "ref1 " <<al.getreference1() << " numAcc "<< data.numAcc() << std::endl;
+	
+	//	m.gain_function(al, ref_acc, read_acc, g1,g2);
 		double av_gain = (g1+g2)/2 ;
 		if(av_gain > 0){
 #pragma omp critical(al_insert)
@@ -399,7 +511,7 @@ int do_read_map(int argc, char * argv[]){
 }
 		}
 	}
-*/
+
 //	std::map< std::string, size_t> longname2seqidx;
 //	longname2seqidx = data.getLongname2seqidx();
 //	std::cout<<longname2seqidx.size()<<std::endl;
@@ -412,7 +524,12 @@ int do_read_map(int argc, char * argv[]){
 		std::cout<< "read gfa file "<<std::endl;
 		rgraph.read_gfa_for_adj(refgfa);
 	}
-	
+	std::cout << "after gfa "<<std::endl;
+	int test_node = 31888;
+	std::set<int> temp_adj = rgraph.get_adjacencies(test_node);
+	for(std::set<int>::iterator it = temp_adj.begin() ; it != temp_adj.end() ; it++){
+		std::cout << *it <<std::endl;
+	}
 	size_t acc;
 	size_t num = 0;
 	std::vector<std::vector<pw_alignment> > all_als;
@@ -446,8 +563,8 @@ int do_read_map(int argc, char * argv[]){
 	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
 //	deep_first df(data, adjacencies);//Deep first search algorithm on reference graph nodes to finde sub graph of length MAXGAP
 //	for(size_t i =0; i < all_als.size();i++){
-	size_t i =70;
-//	for(size_t i =100; i < all_als.size();i++){
+	size_t i =6;
+	for(size_t i =6; i < all_als.size();i++){
 		std::cout <<"read i  "<< i  <<std::endl;
 		std::vector<pw_alignment> alignments = all_als.at(i);
 	//	for(size_t j =0; j < 20; j++){
@@ -462,7 +579,7 @@ int do_read_map(int argc, char * argv[]){
 			connected_comps.compute_on_second_ref(no_fraction_ccs); //We are interested in overlaps only on second reference of an al
 			std::cout << "number of components is " << no_fraction_ccs.size() <<std::endl;
 			std::cout<<no_fraction_ccs.at(0).size()<<std::endl;
-			als_components ccs(data, rgraph, m, no_fraction_ccs);//check the distance between the last right and the first left of the next component
+			als_components<use_model> ccs(data, rgraph, m, no_fraction_ccs);//check the distance between the last right and the first left of the next component
 			ccs.merg_components();
 			std::cout<< "components are merged! "<<std::endl;
 		//	std::cout<< "sequences are 2: "<<data.get_seq_name(2)<<" 3: "<<data.get_seq_name(3)<<" 8: "<<data.get_seq_name(8)<< " 17: "<< data.get_seq_name(17) << " 18: " <<data.get_seq_name(18)<<std::endl;
@@ -470,7 +587,7 @@ int do_read_map(int argc, char * argv[]){
 			ccs.find_als_on_paths(output,acc,readacc);//It also calls dijkstra algorithm inside
 		}
 //		exit(0); //XXX Temp
-//	}
+	}
 	std::cout << "done! "<<std::endl;
 
 
@@ -505,7 +622,7 @@ int check_mapping_result(int argc , char * argv[]){//Use it to test the mapping 
 	mc.read_txt_file(centeridtxt,sequence);
 	mc.read_graph_maf(graphmaf);//XXX This is a bit too specific since I use it for the maffile i produce and know that each accession includes only one full length genome rather than couple of contiges. 
 //	exit(1);
-	mc.read_alignments(als);
+	mc.read_alignments(als); //alignments between reference and reads
 	std::cout<< "als were read"<<std::endl;
 	mc.check_output(mappingoutput,sequence);
 //	mc.print_nodes();
@@ -514,13 +631,14 @@ int check_mapping_result(int argc , char * argv[]){//Use it to test the mapping 
 	return 0;
 }
 int check_sim_mapping_result(int argc, char * argv[]){
-	if(argc<5){
+	if(argc<6){
 		std::cerr<< "Program: test_sim_mapping "<<std::endl;
 		std::cerr<< "Parameters: "<<std::endl;
 		std::cerr<< " maffile from simulation program "<<std::endl;
 		std::cerr<< " maffile from mapping reads against the graph "<<std::endl;
 		std::cerr<< "maffile contains referecne graph "<< std::endl;
 		std::cerr<< "textfile contains center's info"<<std::endl;
+		std::cerr<< "gfafile contains ref graph " << std::endl;
 		return 1;
 	}
 	std::string simmaf(argv[2]);
@@ -531,6 +649,12 @@ int check_sim_mapping_result(int argc, char * argv[]){
 	std::ifstream graphmaf(graph_maf.c_str());
 	std::string centersinfo(argv[5]);
 	std::ifstream centers(centersinfo.c_str());
+	std::string refgfa(argv[6]);
+	std::ifstream gfain(refgfa.c_str());
+	test_reveal test;	
+	test.read_gfa(gfain); //Read the reference 
+	std::map<size_t, std::pair<size_t,size_t> > nodes_on_ref_graph;
+	nodes_on_ref_graph = test.get_ref_graph_nodes();
 /*	std::ifstream in("fastatest");//Only center of the cluster 24, read from fasta file containing both nodes and reads
 	char c;
 	std::string fasta;
@@ -598,7 +722,7 @@ int check_sim_mapping_result(int argc, char * argv[]){
 	map_check mc;
 //	mc.read_graph_maf(graphmaf);
 	std::string sequence; //TODO
-	mc.read_txt_file(centers,sequence);
+//	mc.read_txt_file(centers,sequence);
 	test_sim_reads_mapping test_map(mc);
 	test_map.read_sim_maffile(maffile, onreads);//read tha maf file from simpb 
 //compare onreads with the original seq from testnc:
@@ -625,7 +749,7 @@ int check_sim_mapping_result(int argc, char * argv[]){
 		}*/
 	}
 	std::cout << "position and content were checked" << onreads.size() <<std::endl;
-	test_map.check_output(map_maffile);
+	test_map.check_output(map_maffile,nodes_on_ref_graph);
 
 }
 int do_test_reveal(int argc , char* argv[]){
@@ -643,6 +767,7 @@ int do_test_reveal(int argc , char* argv[]){
 	test_reveal test;
 	
 	test.read_gfa(gfain);
+	std::cout << "gfa was read! "<<std::endl;
 	test.read_the_result(mafin);
 	test.compare_with_reveal();
 
@@ -875,23 +1000,29 @@ int needleman_wunsch(int argc, char * argv[]){
 	std::string maffile(argv[3]);
 
 	size_t num_threads = 1;
-	std::string ref = "ACTGCTGATTC";
-	std::string read = "GACTGGATTC";
+//	std::string ref = "ACTGCTGATTC";
+//	std::string read = "GACTGGATTC";
+	std::string ref = "GAAGCTGCTGAAAAAGCCAA";
+	std::string read = "GAAGCTGCTGAAAA";
+
 	all_data data;
 	data.read_fasta_maf(fastafile, maffile);
 
 	wrapper wrap;
-	std::ofstream outs("testoutput");
+//	std::ofstream outs("testoutput");
 	dynamic_mc_model m(data,wrap, num_threads);
+//	model m(data);
 	m.train();
-	m.write_parameters(outs);
+//	m.write_parameters(outs);
 
 	needleman<dynamic_mc_model> n(data, m, read, ref);
+//	simpleNW n(m,read,ref);
 	size_t readid = 1;
 	size_t refid = 0;
 	n.compute_matrix(readid, refid);
+	n.print_score_matrix();
 	n.print_path();
-	size_t type=1;//TODO have to fix it for the other types as soon as i mix it with the other part of the mapping code and running it on real data.
+	size_t type=3;
 	std::string readstr;
 	std::string refstr;
 	n.find_the_best_path(type, readstr, refstr);
@@ -949,6 +1080,12 @@ int main(int argc, char * argv[]) {
 	else if(0 == program.compare("test_reveal")){
 		return do_test_reveal(argc,argv);
 	}
+	else if(0 == program.compare("test_sim_mapping")){
+		return check_sim_mapping_result(argc,argv);
+	}
+	else if(0== program.compare("sim_perfect_reads")){
+		return make_long_reads(argc,argv);
+	}
 	else {
 		usage();
 	}
@@ -960,13 +1097,12 @@ int main(int argc, char * argv[]) {
 
 
 #endif
-
 #include "needleman_wunsch.cpp"
 #include "dynamic_mc.cpp"
 #include "pw_alignment.cpp"
 #include "intervals.cpp"
 #include "alignment_index.cpp"
-
+#include "map_read.cpp"
 
 
 

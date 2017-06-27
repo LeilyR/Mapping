@@ -1245,7 +1245,7 @@ void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences,
 }
 
 
-void all_data::read_fasta(std::string fasta_reads){
+void all_data::read_fasta(std::string fasta_reads){ //Read a fasta file inlcudes sequence reads
 	std::ifstream fastain(fasta_reads.c_str());
 	if(fastain) {
 		std::string str;
@@ -3417,7 +3417,7 @@ void splitpoints::insert_split_point(size_t sequence, size_t position) {
 					}	
 					for(size_t k=0; k<6; ++k) {
 						modification.at(acc1).at(acc2).at(j).at(k)/=sum;
-					//	std::cout << " simple model cost: acc " << acc1 << " to " << acc2 << " modify " << j << " to " << k << " costs " << -log2(modification.at(acc1).at(acc2).at(j).at(k)) << " bits " << std::endl; 
+						std::cout << " simple model cost: acc " << acc1 << " to " << acc2 << " modify " << j << " to " << k << " costs " << -log2(modification.at(acc1).at(acc2).at(j).at(k)) << " bits " << std::endl; 
 					
 					}
 				}
@@ -3497,6 +3497,87 @@ void splitpoints::insert_split_point(size_t sequence, size_t position) {
 
 
 	}
+	void model::cost_function(const pw_alignment& p, size_t & acc1 , size_t & acc2 , double & c1, double & c2, double & m1, double & m2) const {
+
+		std::vector<double> cost_on_sample(2,0);
+		std::vector<double> modify_cost(2,0);
+		std::vector<vector<size_t> >al_base_number(2,vector<size_t>(6,0));
+		std::vector<vector<double> >sequence_cost(2,vector<double>(5,0));
+		std::vector<vector<double> >create_cost(2,vector<double>(5,0));		
+	//	std::vector<vector<vector<double> > > modification_cost(2,vector<vector<double> >(6,vector<double>(6,0)));
+		std::vector<vector<double> > modification_number(6, vector<double>(6,0)); // in (i,j): store modifications from 1 to 2
+	//	std::vector<double> cost_on_sample (2,0);
+		for(size_t i = 0 ; i < 5; i++){
+		 sequence_cost.at(0).at(i)= -log2(cost_on_acc.at(i).at(acc1));
+		 sequence_cost.at(1).at(i)= -log2(cost_on_acc.at(i).at(acc2));
+		}
+//		std::cout << " alsample size " << p.getsample1().size() << std::endl;
+		for(size_t i = 0 ; i< p.alignment_length(); i++ ){
+			char s1ch;
+			char s2ch;
+			p.alignment_col(i, s1ch, s2ch);
+			size_t s1 = dnastring::base_to_index(s1ch);
+			size_t s2 = dnastring::base_to_index(s2ch);
+			al_base_number.at(0).at(s1) ++ ;
+			al_base_number.at(1).at(s2) ++ ;
+
+			modification_number.at(s1).at(s2)+=1.0;
+		}
+		for(size_t j=0; j<5; j++){	
+			create_cost.at(0).at(j)= al_base_number.at(0).at(j)*sequence_cost.at(0).at(j);
+			cost_on_sample.at(0)=cost_on_sample.at(0)+ create_cost.at(0).at(j);
+//			std::cout<<"creat cost of "<< dnastring::index_to_base(j)<<"  on reference1 is "<<  (al_base_number.at(0).at(j))*(sequence_cost.at(0).at(j))<<std::endl;
+			create_cost.at(1).at(j)= al_base_number.at(1).at(j)*sequence_cost.at(1).at(j);
+			cost_on_sample.at(1)=cost_on_sample.at(1)+ create_cost.at(1).at(j);			
+//			std::cout<<"creat cost of "<< dnastring::index_to_base(j)<<"  on reference2 is "<<  al_base_number.at(1).at(j)*sequence_cost.at(1).at(j)<<std::endl;
+		}
+		//	std::cout<<"creat cost of the alignment on sample 1: "<< cost_on_sample.at(0);
+		//	std::cout<<"creat cost of the alignment on sample 2: "<< cost_on_sample.at(1);	
+		
+		for(size_t j=0; j<6; j++){	
+			for (size_t k= 0; k<6; k++){
+			//	modification_cost.at(0).at(j).at(k) = -log2(modification.at(data.accNumber(p.getreference1())).at(data.accNumber(p.getreference2())).at(j).at(k));
+				modify_cost.at(0) +=  -log2(modification.at(acc1).at(acc2).at(j).at(k)) * modification_number.at(j).at(k);
+			//	modification_cost.at(1).at(j).at(k) = -log2(modification.at(data.accNumber(p.getreference2())).at(data.accNumber(p.getreference1())).at(j).at(k));
+				modify_cost.at(1) +=  -log2(modification.at(acc2).at(acc1).at(j).at(k)) * modification_number.at(k).at(j);
+			}
+		}	
+	
+		c1 = cost_on_sample.at(0);
+		c2 = cost_on_sample.at(1);
+		m1 = modify_cost.at(0);
+		m2 = modify_cost.at(1);
+		std::cout << " create 2 " << c2 << " m1 " << m1 << std::endl; 
+		std::cout << " create 1 " << c1 << " m2 " << m2 << std::endl; 
+
+
+	}
+	void model::cost_function(const pw_alignment & p, double & m1, double & m2, size_t & refacc, size_t & readacc)const{
+		std::vector<double> modify_cost(2,0);
+		std::vector<vector<double> > modification_number(6, vector<double>(6,0)); // in (i,j): store modifications from 1 to 2
+		for(size_t i = 0 ; i< p.alignment_length(); i++ ){
+			char s1ch;
+			char s2ch;
+			p.alignment_col(i, s1ch, s2ch);
+			size_t s1 = dnastring::base_to_index(s1ch);
+			size_t s2 = dnastring::base_to_index(s2ch);
+			modification_number.at(s1).at(s2)+=1.0;
+		}
+		for(size_t j=0; j<6; j++){	
+			for (size_t k= 0; k<6; k++){
+				modify_cost.at(0) +=  -log2(modification.at(refacc).at(readacc).at(j).at(k)) * modification_number.at(j).at(k);
+				modify_cost.at(1) +=  -log2(modification.at(readacc).at(refacc).at(j).at(k)) * modification_number.at(k).at(j);
+			}
+		}	
+	
+		m1 = modify_cost.at(0);
+		m2 = modify_cost.at(1);
+		std::cout << " m1 " << m1 << std::endl; 
+		std::cout << " m2 " << m2 << std::endl; 
+
+
+
+	}
 	void model::gain_function(const pw_alignment& p, double & g1, double & g2) const {
 
 		double c1;
@@ -3516,6 +3597,29 @@ void splitpoints::insert_split_point(size_t sequence, size_t position) {
 		g1 = c2 - m1;
 		g2 = c1 - m2;
 
+	}
+	void model::gain_function(const pw_alignment& p, size_t & acc1, size_t & acc2, double & g1, double & g2) const {
+
+		double c1;
+		double c2;
+		double m1;
+		double m2;
+		cost_function(p, acc1, acc2, c1, c2, m1, m2);
+		/*
+				computing the gain:
+				without using the alignment: we pay c1 + c2
+				using the alignment: we pay c1 + m1 (or c2 + m2)
+				the gain of using the alignment is: c2 - m1 (c1+c2-(c1+m1))
+
+		*/
+//		std::cout << "in gain: create 2 " << c2 << " m1 " << m1 << std::endl; 
+
+		g1 = c2 - m1;
+		g2 = c1 - m2;
+
+	}
+	const std::vector<std::vector<double> > model::get_al_modification(size_t & readacc , size_t & refacc) const{
+		return modification.at(refacc).at(readacc);
 	}
 	void model::total_information(size_t & information){
 		information = 0;

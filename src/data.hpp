@@ -219,7 +219,12 @@ public:
 	void alignment_modification();
 	void cost_function(pw_alignment& p) const;
 	void cost_function(const pw_alignment& p, double & c1, double & c2, double & m1, double & m2) const ;
+	void cost_function(const pw_alignment& p, size_t & acc1, size_t & acc2, double & c1, double & c2, double & m1, double & m2) const ;
+	void cost_function(const pw_alignment & p, double & m1, double & m2, size_t & refacc, size_t & readacc)const;
 	void gain_function(const pw_alignment& p, double & g1, double & g2) const;
+	void gain_function(const pw_alignment& p, size_t & acc1, size_t & acc2, double & g1, double & g2) const;
+	const std::vector<std::vector<double> > get_al_modification(size_t & readacc , size_t & refacc) const;
+
 	void total_information(size_t&);
 	void train();
 
