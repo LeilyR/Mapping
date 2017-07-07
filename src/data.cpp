@@ -1194,7 +1194,7 @@ void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences,
 									//	std::cout<< "if strand2 is pos "<<std::endl;
 									//	al.print();
 									}
-									if(alignments.size() % 1000 ==0) std::cout << "." << std::flush;
+									if(alignments.size() % 100000 ==0) std::cout << "." << std::flush;
 
 								}
 							}

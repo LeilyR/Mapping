@@ -387,6 +387,8 @@ const unsigned int map_check::get_node_length(unsigned int & node)const{
 }
 void test_sim_reads_mapping::read_sim_maffile(std::ifstream & sim_maffile, std::map<std::string , std::pair<size_t , size_t> > & onreads){//Read the maf file from simpb software
 	size_t count = 0;
+	size_t read_id = 1;
+	size_t base = 0;
 	std::string str;
 	getline(sim_maffile,str);
 	while(!sim_maffile.eof()){
@@ -421,6 +423,10 @@ void test_sim_reads_mapping::read_sim_maffile(std::ifstream & sim_maffile, std::
 			assert(parts2.size()==7);
 			size_t begin2 = size_t(std::stoi(parts2.at(2)));
 			size_t end2 = size_t(std::stoi(parts2.at(3)))-1;
+			std::cout << "on read " << count << "there are " << size_t(std::stoi(parts2.at(3))) <<std::endl;
+			if(count < 56){
+				base += size_t(std::stoi(parts2.at(3)));
+			}
 			std::string str2 = parts2.at(6);
 
 			size_t read_begin, read_end , ref_begin, ref_end;
@@ -439,6 +445,7 @@ void test_sim_reads_mapping::read_sim_maffile(std::ifstream & sim_maffile, std::
 			}
 			pw_alignment p(str1,str2,ref_begin, read_begin, ref_end, read_end, 0, count);
 			alignments.insert(std::make_pair(count,p));
+			
 			onreads.insert(std::make_pair(nogap, std::make_pair(ref_begin,ref_end)));
 		}
 		getline(sim_maffile,str);
@@ -447,8 +454,9 @@ void test_sim_reads_mapping::read_sim_maffile(std::ifstream & sim_maffile, std::
 	for(std::map<size_t,std::pair<size_t,size_t> >::iterator it = reads_position_on_seq.begin() ; it!= reads_position_on_seq.end() ; it++){
 		std::cout << "read " << it->first << " : "<< std::endl;
 		std::cout << "from "<< it->second.first << " to "<< it->second.second <<std::endl;
-
+		
 	}
+	std::cout << "total base is "<<base <<std::endl;
 	assert(count == 30775);
 }
 void test_sim_reads_mapping::this_part_position_on_seq(bool & direction, size_t & read, size_t & start_on_read, size_t & end_on_read, size_t & start, size_t & end,size_t & read_length){
@@ -595,6 +603,7 @@ void test_sim_reads_mapping::this_part_position_on_seq(bool & direction, size_t 
 }
 
 void test_sim_reads_mapping::check_output(std::ifstream & mapping_maf, std::map<size_t, std::pair<size_t,size_t> > & nodes_on_ref_graph){ //Read the mapping maf file
+	size_t error = 0;
 	if(mapping_maf) {
 		std::string str;
 		while(getline(mapping_maf, str)) {
@@ -616,7 +625,10 @@ void test_sim_reads_mapping::check_output(std::ifstream & mapping_maf, std::map<
 					std::cout << "read id "<< read_id <<std::endl;
 					size_t begin_on_ref2 = size_t(stoi(parts2.at(2)));
 					std::string ref2 = parts2.at(6);	
+					bool GAPONLY = false;
 					size_t length = size_t(stoi(parts2.at(3)));
+					if(length == 0) GAPONLY = true;
+					std::cout << "l " << length << " b "<< begin_on_ref2 <<std::endl;
 					size_t end_on_ref2 = length + begin_on_ref2 -1;
 					std::map<size_t , std::pair<size_t , size_t> >::iterator it = reads_position_on_seq.find(read_id);
 					assert(it != reads_position_on_seq.end());
@@ -651,13 +663,13 @@ void test_sim_reads_mapping::check_output(std::ifstream & mapping_maf, std::map<
 					std::cout<<"on "<< ref_id << " : "<< begin_on_ref1 << " "<<end_on_ref1<<std::endl; //Begin and end on the center itself. We might need to check the corresponding member!
 				//	compare_with_my_graph(ref_id, start_on_seq , end_on_seq, begin_on_ref1,end_on_ref1, begin_on_ref2, end_on_ref2, read_length);
 					size_t temp_ref_id = ref_id;
-					compare_with_reveal_graph(nodes_on_ref_graph, temp_ref_id);	
+					compare_with_reveal_graph(nodes_on_ref_graph, temp_ref_id,start_on_seq,end_on_seq,error, GAPONLY);	
 				}
 			}
 		}
 
 	}
-
+	std::cout << "total error "<< error << std::endl;
 }
 void test_sim_reads_mapping::compare_with_my_graph(unsigned int & ref_id, size_t & start_on_seq, size_t & end_on_seq,size_t & begin_on_ref1, size_t & end_on_ref1, size_t & begin_on_ref2, size_t & end_on_ref2, size_t & read_length){
 	std::map<unsigned int , std::vector<std::string> > clusters = mp_check.get_clusters();
@@ -739,10 +751,37 @@ void test_sim_reads_mapping::compare_with_my_graph(unsigned int & ref_id, size_t
 			}
 		}
 }
-void test_sim_reads_mapping::compare_with_reveal_graph(std::map<size_t, std::pair<size_t,size_t> > & nodes_on_ref_graph, size_t & ref_id){
+void test_sim_reads_mapping::compare_with_reveal_graph(std::map<size_t, std::pair<size_t,size_t> > & nodes_on_ref_graph, size_t & ref_id,size_t & begin, size_t & end,size_t & error, bool & GAPONLY){
 	std::map<size_t, std::pair<size_t,size_t> >::iterator it = nodes_on_ref_graph.find(ref_id);
 	if(it == nodes_on_ref_graph.end()){
-		std::cout<< "mapping error! "<<std::endl;
+		std::cout<< "mapping error! wrong node"<<std::endl;
+		error += end - begin +1;
+	}else{
+		if(GAPONLY == false){
+			if(begin >= it->second.first && end <=it->second.second){
+				std::cout<< "correct!" <<std::endl;
+			}else if(begin >= it->second.first && end >it->second.second){
+				error += end-it->second.second;	
+				std::cout<< "small error "<< end-it->second.second <<std::endl;
+			}else if(begin < it->second.first && end <=it->second.second){
+				error += it->second.first - begin;
+				std::cout<< "small error " << it->second.first - begin << std::endl;
+			}else if(begin < it->second.first && end > it->second.second){
+				error += end-it->second.second;			
+				error += it->second.first - begin;
+				std::cout << "2 x small error " << (end-it->second.second)+(it->second.first - begin)<<std::endl;
+			}else{
+				error += end - begin +1;
+				std::cout << "big error "<< end- begin +1 <<std::endl;
+			}
+		}else{
+			if((begin >= it->second.first && begin <=it->second.second)||begin ==it->second.second+1){ //TODO not so accurate! :(
+				std::cout << "correct "<<std::endl;
+			}else{
+				std::cout << begin << " " << it->second.second+1 <<std::endl;
+				std::cout << "error wrong path" <<std::endl;
+			}
+		}
 	}
 
 }
@@ -808,6 +847,7 @@ void test_reveal::read_gfa(std::ifstream & gfa){
 			strsep(parts.at(4),":",ref_parts);
 			to = from + parts.at(2).length()-1;
 			if(ref_parts.at(2).at(0)=='0'){
+				std::cout << "id " << id <<std::endl;
 				ref_graph_nodes.insert(std::make_pair(id,std::make_pair(from,to)));
 				from = to + 1;
 			}
@@ -820,6 +860,7 @@ void test_reveal::read_gfa(std::ifstream & gfa){
 
 }
 void test_reveal::read_the_result(std::ifstream & mapping_maf){ //Read the mapping maf file
+	size_t accu_pos = 0;
 	if(mapping_maf) {
 		std::string str;
 		while(getline(mapping_maf, str)) {
@@ -856,6 +897,8 @@ void test_reveal::read_the_result(std::ifstream & mapping_maf){ //Read the mappi
 					std::vector<std::string> readname_parts;
 					strsep(parts2.at(1),":",readname_parts);
 					std::string sub = readname_parts.at(1).substr(4);
+				//XXX	std::string sub = readname_parts.at(1);
+
 					std::stringstream sstream3(sub);
 					size_t read_id;
 					sstream3 >> read_id;
@@ -864,11 +907,15 @@ void test_reveal::read_the_result(std::ifstream & mapping_maf){ //Read the mappi
 					size_t read_pos;
 					sstream1 >> read_pos;
 				//	std::cout << "read pos "<<read_pos<<std::endl;
-					std::stringstream sstream2(parts2.at(3));
+					std::stringstream sstream2(parts2.at(3));					
 					size_t al_length;
 					sstream2 >> al_length;
 					size_t from = read_id*30030 + read_pos;
 					size_t to = read_id*30030 + read_pos + al_length-1;
+				//	size_t from = accu_pos;
+				//	size_t to = accu_pos + al_length -1;
+				//	accu_pos += al_length;
+				//	std::cout << "from " << from << " to " << to << " new accu "<< accu_pos << " read pos " << read_pos << " length " << al_length <<std::endl;
 					from_mapping_output.insert(std::make_pair(ref_id, std::make_pair(from,to)));
 					std::cout<< "on "<< ref_id << " from "<< from << " to " << to << std::endl;
 

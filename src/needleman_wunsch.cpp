@@ -28,6 +28,7 @@
 	void needleman<T>::compute_matrix(size_t & readacc, size_t & refacc){ //TODO this is also model dependent and changing in costs has be considered
 	//	size_t readacc = data.accNumber(read_id);
 	//	size_t refacc = data.accNumber(ref_id);
+		size_t ins_penalty = 1;
 		const std::map< std::string, std::vector<double> > model_cost = model.get_al_cost(refacc, readacc);
 		//Fill in the first cell:
 		std::string context = get_first_context();
@@ -237,14 +238,16 @@
 
 					mod.push_back(value);
 				}
-				//if insertion(vertical)
+				//if insertion(vertical) //TODO add insertion cost
 				previous_value =mod_matrix.at(i-1).at(j);	
 				previous_context = context_matrix.at(i-1).at(j);
+			//	if(previous_context.at(previous_context.length()-1) >=5+NUM_DELETE_DYN+NUM_KEEP_DYN) ins_penalty = ins_penalty + 500;
+			//	else ins_penalty = 0;
 				context = previous_context;
 				context +=(char) dnastring::base_to_index(ref.at(j-1));
 				std::map< std::string, std::vector<double>  >::const_iterator it= model_cost.find(context);
 				assert(it != model_cost.end());
-				double value = it->second.at(5+NUM_DELETE_DYN+NUM_KEEP_DYN+dnastring::base_to_index(read.at(i-1)));
+				double value = ins_penalty*it->second.at(5+NUM_DELETE_DYN+NUM_KEEP_DYN+dnastring::base_to_index(read.at(i-1))); //TODO times penalty!
 				score.push_back(value+score_matrix.at(i-1).at(j));
 			//	std::cout<< "score "<< value << " + " << score_matrix.at(i-1).at(j)<<std::endl;
 				previous_context.erase(previous_context.begin());
@@ -416,7 +419,7 @@
 		for(size_t i = pattern.size(); i > 0; i--){
 		//	std::cout << (size_t)pattern.at(i-1)<<std::endl; 
 			if((size_t)pattern.at(i-1) >=5 && (size_t)pattern.at(i-1)<5+NUM_DELETE_DYN){
-				cost += it->second.at((size_t)pattern.at(i-1));
+				cost += 10*(size_t)pattern.at(i-1)*it->second.at((size_t)pattern.at(i-1)); //XXX Just added  gap penalty 5*deletion
 			}
 			else break;
 
@@ -460,7 +463,7 @@
 			}
 			row = read.length();
 			std::cout << "start here! "<<column<<std::endl;
-		}else{
+		}else if(type ==3){
 			assert(type == 3);
 			column = ref.length();
 //			column = 0;
@@ -468,7 +471,7 @@
 			row = 0;
 			std::cout << "initial min "<< min <<std::endl;
 			for(size_t i =1; i < read.length()+1; i++){
-				std::cout << score_matrix.at(i).at(ref.length()) <<std::endl;
+			//	std::cout << score_matrix.at(i).at(ref.length()) <<std::endl;
 				if(score_matrix.at(i).at(ref.length())<min){
 					min = score_matrix.at(i).at(ref.length());
 				//	std::cout << " i " << i << " min "<< min <<std::endl;
@@ -476,6 +479,32 @@
 				} 
 			}
 			std::cout << "start at "<< row << " c " << column <<std::endl;
+
+		}else{
+			assert(type == 6);
+			std::cout << "type 6 " << std::endl;
+		/*	row = 0;
+			column = 0;
+			double min = score_matrix.at(read.length()).at(ref.length());
+			for(size_t i =1; i < read.length()+1; i++){
+				for(size_t j =1; j < ref.length()+1; j++){
+					if(min > score_matrix.at(i).at(j)){
+						row = i;
+						column = j;
+					}
+				}
+			}*/
+			double min = score_matrix.at(read.length()).at(0);
+			column = 0;
+			for(size_t i =1; i < ref.length()+1; i++){
+				std::cout << score_matrix.at(read.length()).at(i) <<std::endl;
+				if(score_matrix.at(read.length()).at(i)<min){
+					min = score_matrix.at(read.length()).at(i);
+					column = i;
+				} 
+			}
+			row = read.length();
+			std::cout << "start here! "<<column<<std::endl;
 
 		}
 	/*	if(type == 3 && column > 0){//XXX Get sure if it is necessary to keep the gap on read !
@@ -541,7 +570,7 @@
 			std::cout << "at type two! "<<std::endl;
 		}
 		if(row == 0 && (type ==1 || type ==3 || type == 4)){
-			std::cout<< "HERE AT TYPE 3 "<<  "column "<<column  << " row " << row <<std::endl;
+			std::cout<< "HERE AT TYPE  " << type <<  " column "<<column  << " row " << row <<std::endl;
 			while(column != 0){
 				from_read += '-';
 				from_ref += ref.at(column-1);

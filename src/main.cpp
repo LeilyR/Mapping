@@ -376,9 +376,9 @@ int do_read_data(int argc, char * argv[]) {
 	return 0;
 }
 
-int read_gfa(int argc, char * argv[]){
+int gfa_to_fasta(int argc, char * argv[]){
 	if(argc < 4){
-		std::cerr << "Program: read_gfa"<<std::endl;
+		std::cerr << "Program: gfa_to_fasta"<<std::endl;
 		std::cerr << "Parameters:"<<std::endl;
 		std::cerr<< "Input: GFA file"<<std::endl;
 		std::cerr <<"Output: fasta file"<<std::endl;
@@ -563,13 +563,26 @@ int do_read_map(int argc, char * argv[]){
 	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
 //	deep_first df(data, adjacencies);//Deep first search algorithm on reference graph nodes to finde sub graph of length MAXGAP
 //	for(size_t i =0; i < all_als.size();i++){
-	size_t i =6;
-	for(size_t i =6; i < all_als.size();i++){
+//	size_t i =12;
+	for(size_t i =0; i < all_als.size();i++){
 		std::cout <<"read i  "<< i  <<std::endl;
 		std::vector<pw_alignment> alignments = all_als.at(i);
-	//	for(size_t j =0; j < 20; j++){
-	//		alignments.push_back(all_als.at(i).at(j));
-	//	}
+	/*	std::vector<pw_alignment> alignments;
+		std::map<double , pw_alignment> ordered_als;
+		for(size_t j =0; j < all_als.at(i).size(); j++){
+			const pw_alignment al = all_als.at(i).at(j);
+			double g1 ,g2;	
+			m.gain_function(al,g1,g2);
+			double av_gain = (g1+g2)/2 ;
+			ordered_als.insert(std::make_pair(av_gain, al));
+		}
+		size_t counter = 0;
+		for(std::map<double, pw_alignment>::reverse_iterator it = ordered_als.rbegin() ; it != ordered_als.rend(); it++){
+			if(counter <= 200){
+				alignments.push_back(it->second);
+			}else break;
+			counter ++;
+		}*/
 		dnastring current_read = data.getSequence(i);
 		size_t readacc = data.accNumber(i);
 		std::cout << "als size "<< alignments.size() <<std::endl;
@@ -596,7 +609,7 @@ int do_read_map(int argc, char * argv[]){
 	return 0;
 }
 int check_mapping_result(int argc , char * argv[]){//Use it to test the mapping result over the reads i made out of one certain accession among the existing one on the graph
-	if(argc<6){
+	if(argc<7){
 		std::cerr<<"Program: test_mapping" <<std::endl;
 		std::cerr << "Parameters:" << std::endl;
 		std::cerr<<"maf file from reference graph"<<std::endl;//graph.maf
@@ -730,8 +743,8 @@ int check_sim_mapping_result(int argc, char * argv[]){
 		std::string this_part = it->first;
 		size_t from = it->second.first;
 		size_t to = it->second.second;
-	//	std::cout << "f " << from << " t "<< to <<std::endl;
-/*		if(from < to){
+		std::cout << "f " << from << " t "<< to <<std::endl;
+	/*	if(from < to){
 			for(size_t j = from ; j <=to ; j++){
 				assert(seq.at(j)==this_part.at(j-from));
 			}
@@ -1065,8 +1078,8 @@ int main(int argc, char * argv[]) {
 	else if (0== program.compare("read_data")){
 		return do_read_data(argc,argv);
 	}
-	else if(0==program.compare("read_gfa")){
-		return read_gfa(argc,argv);
+	else if(0==program.compare("gfa_to_fasta")){
+		return gfa_to_fasta(argc,argv);
 	}
 	else if(0==program.compare("map_read")){
 		return do_read_map(argc,argv);

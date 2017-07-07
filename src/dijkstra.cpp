@@ -147,12 +147,12 @@ void dijkstra::find_shortest_path(size_t & first_left , size_t & last_right , st
 void dijkstra::add_the_path(std::vector<size_t> & shortest_path){
 	size_t node = 1; //it is initiallized with the end node.
 	shortest_path.push_back(node);
-	std::cout<< node << " ";
+	std::cout<< "node "<<node << " ";
 	std::map<const size_t, size_t>::iterator it = current_and_previous.find(node);
 	assert(it != current_and_previous.end());
 	while(it!= current_and_previous.end()){
 		shortest_path.push_back(it->second);
-		std::cout << it->second << " ";
+		std::cout << "pre" <<it->second << " ";
 		node = it->second;
 		it = current_and_previous.find(node);
 	}

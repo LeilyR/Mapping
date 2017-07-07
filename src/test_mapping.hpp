@@ -68,7 +68,7 @@ class test_sim_reads_mapping{
 		void check_output(std::ifstream & mapping_maf, std::map<size_t, std::pair<size_t,size_t> > & nodes_on_ref_graph);
 		void check_if_shifted(unsigned int & ref_id, bool & IsMapped);
 		void compare_with_my_graph(unsigned int & ref_id, size_t & start_on_seq, size_t & end_on_seq,size_t & begin_on_ref1, size_t & end_on_ref1, size_t & begin_on_ref2, size_t & end_on_ref2,size_t & read_length);
-		void compare_with_reveal_graph(std::map<size_t, std::pair<size_t,size_t> > & nodes_on_ref_graph, size_t & ref_id);
+		void compare_with_reveal_graph(std::map<size_t, std::pair<size_t,size_t> > & nodes_on_ref_graph, size_t & ref_id, size_t & begin , size_t & end, size_t & error, bool & GAPONLY);
 		void find_position_on_member(unsigned int & center, size_t & begin_on_center , size_t & end_on_center,size_t & begin_on_mem , size_t & end_on_mem,int & position);
 	private:
 		map_check mp_check;

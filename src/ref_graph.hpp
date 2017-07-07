@@ -36,6 +36,9 @@ class ref_graph{
 	void delete_path(std::vector<int> & this_path);
 	const std::set<vector<int> > get_paths()const;
 	const std::set<int> get_nodes()const;
+	const std::set<int> get_nodes_on_paths(const int & next)const;
+
+	const std::set<int> get_subgraph_nodes() const;
 	std::set<int> get_adjacencies(int & node)const{
 		std::set<int> nodes;
 		std::map<int, std::set<int> >::const_iterator it = adjacencies.find(node);
@@ -53,7 +56,7 @@ class ref_graph{
 		}
 		return nodes;
 	}
-
+	void make_sub_graph(int & , std::string & , size_t & );
 	private:
 	const all_data & data;
 	std::map<std::string, size_t> longname2seqidx;
@@ -66,6 +69,11 @@ class ref_graph{
 	std::set<vector<int> > paths;
 	std::set<int> nodes_on_paths;
 	std::map<int, size_t> path_length;
+
+//NEW:
+	std::set<int> sub_graph_nodes;
+	std::map<int , std::set<int> > sub_graph;
+	std::map<int, std::set<int> > pre_nodes_on_subgraph;
 };
 
 #endif

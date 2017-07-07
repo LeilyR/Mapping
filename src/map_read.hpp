@@ -8,6 +8,8 @@
 #include "simple_NW_algo.hpp"
 #include "dijkstra.hpp"
 
+#include <time.h>
+#include <stdio.h>
 
 /*class deep_first{//It runs deep first algorithm on reference graph to retrun parts of graph that the distance between the first and the last node is less than MAXGAP.
 	public:
@@ -47,13 +49,13 @@ class als_components{
 		alignments_right.resize(ccs.size());
 
 		for(size_t i = 0 ; i < ccs.size(); i++){
-			std::cout << "cc at " << i << " : "<<std::endl;
+		//	std::cout << "cc at " << i << " : "<<std::endl;
 			for(std::set<const pw_alignment* , compare_pointer_pw_alignment >::iterator it = ccs.at(i).begin() ; it != ccs.at(i).end() ; it++){
 				const pw_alignment * al = *it;
 				alignments_left.at(i).insert(*al);
 				alignments_right.at(i).insert(*al);
 
-				al->print();
+			//	al->print();
 
 			}
 			std::multiset<pw_alignment , sort_pw_alignment_by_left >::iterator first = alignments_left.at(i).begin();
@@ -68,7 +70,7 @@ class als_components{
 			p.get_lr2(l2,r2);
 			size_t upper = r2;
 			std::cout << "upper "<< upper<<std::endl;
-			boundries.insert(std::make_pair(lower,upper));
+			boundries.insert(std::make_pair(lower,std::make_pair(upper,i)));
 			
 			
 		}
@@ -79,19 +81,19 @@ class als_components{
 		std::multiset<pw_alignment,sort_pw_alignment_by_right > tempr;
 		size_t previous_right, current_left;
 		size_t counter = 0;
-		for(std::map<size_t, size_t>::iterator it = boundries.begin(); it != boundries.end();it++){
-			std::cout << it->first <<  " "<< it->second<<std::endl;
+		for(std::map<size_t, std::pair<size_t,size_t> >::iterator it = boundries.begin(); it != boundries.end();it++){
+			std::cout << it->first <<  " "<< it->second.first<<std::endl;
 			if(it == boundries.begin()){
-				previous_right = it->second;
-				templ = alignments_left.at(counter);
-				tempr = alignments_right.at(counter);
+				previous_right = it->second.first;
+				templ = alignments_left.at(it->second.second);
+				tempr = alignments_right.at(it->second.second);
 				counter++;
 			}else{
 				current_left = it->first;
 				if(current_left - previous_right < MAXGAP){
-					templ.insert(alignments_left.at(counter).begin(), alignments_left.at(counter).end());
-					tempr.insert(alignments_right.at(counter).begin(),alignments_right.at(counter).end());
-					previous_right = it->second;
+					templ.insert(alignments_left.at(it->second.second).begin(), alignments_left.at(it->second.second).end());
+					tempr.insert(alignments_right.at(it->second.second).begin(),alignments_right.at(it->second.second).end());
+					previous_right = it->second.first;
 					counter++;
 				}else{
 					std::cout<<"members of a new component"<<std::endl;
@@ -102,9 +104,9 @@ class als_components{
 					alignments.push_back(templ);
 					ordered_als_by_right.push_back(tempr);
 					assert(tempr.size()==templ.size());
-					templ = alignments_left.at(counter);
-					tempr = alignments_right.at(counter);
-					previous_right = it->second;					
+					templ = alignments_left.at(it->second.second);
+					tempr = alignments_right.at(it->second.second);
+					previous_right = it->second.first;					
 					counter++;
 				}
 			}
@@ -151,6 +153,8 @@ class als_components{
 	void looking_for_first_al(size_t & ,const pw_alignment & p,size_t &);
 	void looking_for_last_al(size_t & ,const pw_alignment & p,size_t &);
 	void make_first_nw_als(size_t & comp, const pw_alignment & p ,std::set<std::vector<int> > & refs, std::string & seq_from_ref, unsigned int & read_id, size_t & read_from , size_t & read_to , size_t & read_acc, size_t & ref_acc);
+	void make_last_nw_als(size_t & comp,int& node_name, const pw_alignment & current_al, std::set<int> & nodes_on_paths ,std::string & seq_from_read, unsigned int & ref_id, unsigned int & read_id, size_t & read_from , size_t & read_to , size_t & read_acc, size_t & ref_acc);
+
 	double get_cost(const pw_alignment & p, size_t & acc1 , size_t & acc2);
 	void make_first_als(std::vector<int> & nodes , std::string & refout , std::string & readout, size_t & left_on_current_node,size_t & refacc, size_t & readacc, size_t & read_id,std::vector<pw_alignment> & first_als, size_t &);
 	void make_first_als(std::vector<int> & nodes , std::string & refout , std::string & readout , size_t & first_begin, size_t & last_end, std::string & seq_from_ref , size_t & left_on_current_node,size_t & refacc,size_t & read_id,size_t & current_node, std::vector<pw_alignment> & first_als);
@@ -169,7 +173,7 @@ class als_components{
 		const T & model;
 		std::vector<std::multiset<pw_alignment , sort_pw_alignment_by_left> >alignments_left;
 		std::vector<std::multiset<pw_alignment , sort_pw_alignment_by_right> >alignments_right;
-		std::map<size_t,size_t> boundries;
+		std::map<size_t,std::pair<size_t,size_t> > boundries;
 		std::vector<std::multiset<pw_alignment,sort_pw_alignment_by_left> > alignments;//Includes components of alignments that have more than MAXGAP distance with each other.
 		std::vector<std::multiset<pw_alignment , sort_pw_alignment_by_right> >ordered_als_by_right;
 	//	std::vector<std::set<const pw_alignment*> >add_to_start;
