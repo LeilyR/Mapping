@@ -563,7 +563,7 @@ int do_read_map(int argc, char * argv[]){
 	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
 //	deep_first df(data, adjacencies);//Deep first search algorithm on reference graph nodes to finde sub graph of length MAXGAP
 //	for(size_t i =0; i < all_als.size();i++){
-//	size_t i =12;
+//	size_t i = 227;
 	for(size_t i =0; i < all_als.size();i++){
 		std::cout <<"read i  "<< i  <<std::endl;
 		std::vector<pw_alignment> alignments = all_als.at(i);

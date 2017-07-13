@@ -31,7 +31,7 @@ class ref_graph{
 	size_t seq_length(std::string &, std::string &);
 	std::string seqname(int & );
 	void deep_first_search(int &, std::string & , size_t & );
-	void look_for_neighbors(int & , std::map<int,bool> &  , std::string &, int & accu_length, std::vector<int> & apath, size_t & );
+	void look_for_neighbors(int & node, std::map<int,bool> & visited , std::string & refacc, std::map<int , std::vector<std::pair<std::vector<int>,size_t> > > & parent_length);
 	void bfs(int & startnode, std::string & refacc, size_t & right_on_ref);
 	void delete_path(std::vector<int> & this_path);
 	const std::set<vector<int> > get_paths()const;

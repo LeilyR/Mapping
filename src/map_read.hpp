@@ -76,7 +76,7 @@ class als_components{
 		}
 	}
 	~als_components(){}
-	void merg_components(){//TODO change it with join interval function in avl tree to make it faster
+	void merg_components(){
 		std::multiset<pw_alignment,sort_pw_alignment_by_left > templ;
 		std::multiset<pw_alignment,sort_pw_alignment_by_right > tempr;
 		size_t previous_right, current_left;
@@ -124,6 +124,7 @@ class als_components{
 		indices_nodes.resize(alignments.size());
 		node_indices.resize(alignments.size());
 	}
+	void filter_als(size_t & comp);
 	/*Go over the alignments, for each al find all the possible paths on the graph that starts with that alignment and has <=MAXGAP length,
 	then find the alignments that their left is closer than MAXGAP bases to the current one.Check them on the graph. If they are on those 
 	paths that we already picked then we make new als using needleman wunsch algorithm.
@@ -166,6 +167,7 @@ class als_components{
 	void add_expensive_edges(size_t & comp,size_t & refacc, size_t & readacc);
 	void add_to_maf(const pw_alignment & al, std::ofstream & output, bool & firstal);
 	const pw_alignment & get_alignment(size_t & , size_t &)const;
+	void make_components(size_t & comp, std::vector<std::map<std::pair<size_t,size_t>,double> > & components, std::vector<std::set<size_t> > & comp_nodes, bool & FULLCOMP, size_t & no_comp); //XXX Just started thinking of spliting alignment graph into several components andfind the shortest path on each of these components
 	private:
 		const all_data & data;
 	//	deep_first & dfirst;
@@ -179,7 +181,7 @@ class als_components{
 	//	std::vector<std::set<const pw_alignment*> >add_to_start;
 	//	std::vector<std::set<const pw_alignment*> >add_to_end;
 		std::vector<std::vector<size_t> > shortest_path;
-		std::vector< std::map<size_t , std::set<size_t> > >adjacencies; //from_al index , to_al index , vector goes over different components 
+		std::vector< std::map<size_t , std::set<size_t> > >adjacencies; //from_al index , to_al index , vector goes over different components (Includes alignment graph)
 		std::vector<std::map<const pw_alignment, size_t, compare_pw_alignment> >node_indices;//al and its index
 		std::vector<std::map<std::pair<size_t,size_t>,double> >weight_of_edges; //Edges and their weight. In the case of exisitng adjacencies, weight is always the modification of the end node of an edge 
 		std::vector<std::map<size_t, const pw_alignment> >indices_nodes;

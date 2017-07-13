@@ -7,7 +7,7 @@ template<typename T>
 void als_components<T>::find_als_on_paths(std::ofstream & output,size_t & refacc, size_t & readacc){
 //	add_to_start.resize(alignments.size());
 //	add_to_end.resize(alignments.size());
-	shortest_path.resize(alignments.size());//Shortest path is found for each component
+//	shortest_path.resize(alignments.size());//Shortest path is found for each component
 	for(size_t i =0; i < alignments.size(); i++){//Over components of alignments between one specific read and the reference graph
 		std::cout << "all als at comp "<< i << " are " << alignments.at(i).size() << std::endl;
 		size_t first_left;
@@ -58,8 +58,35 @@ void als_components<T>::find_als_on_paths(std::ofstream & output,size_t & refacc
 			}
 		//	if(counter == 31) exit(0);
 		}
-	//	add_expensive_edges(i,refacc,readacc);//i-->component //XXX Temporary commented out //TODO replace it by mapping over components 
+	//	add_expensive_edges(i,refacc,readacc);//i-->component //XXX Temporary commented out //XXX Replaced it by mapping over components 
+		std::vector<std::map<std::pair<size_t,size_t>,double> > components;
+		std::vector<std::set<size_t> > comp_nodes;
+		std::map<std::pair<size_t,size_t>,double> weight_to_use;
+		bool FULLCOMP = false;
+		size_t no_comp;
+		make_components(i,components, comp_nodes, FULLCOMP , no_comp);
+		if(components.size() >1){
+			std::cout << "components size is "<< components.size() << "bool " << FULLCOMP <<std::endl;
+		}
+		if(components.size()> 1 && FULLCOMP == false){
+			//TODO complicated case
+			add_expensive_edges(i,refacc,readacc);
+			weight_to_use = weight_of_edges.at(i);//TODO has to be replaced by something ore thoughtful!! this way will be so slow!
 
+		}else if(components.size() > 1 && FULLCOMP == true){
+			weight_to_use = components.at(no_comp);
+
+		}else{
+			assert(components.size()==1);
+			weight_to_use = weight_of_edges.at(i);
+
+		}
+	/*	for(size_t i = 0; i < components.size() ; i++){
+			std::cout << "at "<<i << std::endl;
+			for(std::map<std::pair<size_t, size_t>, double>::iterator it = components.at(i).begin() ; it != components.at(i).end() ;it++){
+				std::cout << it->first.first << " " << it->first.second << std::endl;
+			}
+		}*/
 	/*	std::cout << "adj size is "<< adjacencies.size()<<std::endl;
 		for(std::map<size_t, std::set<size_t> >::iterator it = adjacencies.at(i).begin(); it != adjacencies.at(i).end(); it++){
 			std::cout << it->first << " to: " << std::endl;
@@ -75,13 +102,16 @@ void als_components<T>::find_als_on_paths(std::ofstream & output,size_t & refacc
 		for(std::map<std::pair<size_t,size_t>,double>::iterator it = weight_of_edges.at(i).begin(); it != weight_of_edges.at(i).end();it++){
 			std::pair<size_t , size_t> this_edge = it->first;
 			std::cout<< "from " <<this_edge.first << " to "<<this_edge.second << " costs " << it->second << std::endl;
-		}
-		dijkstra dij(data,weight_of_edges.at(i));
-		dij.find_shortest_path(first_left,lastr,shortest_path.at(i));//Input: begin and end of the component, Output: shortest path
+		}//TODO dijkstra on members of components
+		dijkstra dij(data,weight_to_use);
+		std::vector<size_t> this_short_path;
+	//	dij.find_shortest_path(first_left,lastr,shortest_path.at(i));//Input: begin and end of the component, Output: shortest path
+		dij.find_shortest_path(first_left,lastr,this_short_path); //TODO first_left and lastr can be removed
+		shortest_path.push_back(this_short_path);
 		std::cout<< "shortest path is: " << std::endl;
 		double sum = 0.0;
-		for(size_t j = 0; j < shortest_path.at(i).size(); j++){
-			if(shortest_path.at(i).at(j) != 0 && shortest_path.at(i).at(j) !=1){
+		for(size_t j = 0; j < this_short_path.size(); j++){
+			if(this_short_path.at(j) != 0 && this_short_path.at(j) !=1){
 				std::multimap<size_t,const pw_alignment>::iterator it=indices_nodes.at(i).find(shortest_path.at(i).at(j));
 				assert(it != indices_nodes.at(i).end());
 				const pw_alignment p = it->second;
@@ -93,10 +123,10 @@ void als_components<T>::find_als_on_paths(std::ofstream & output,size_t & refacc
 			}
 		}		
 		std::cout<< "sum is "<< sum <<std::endl;
-		for(size_t j = 0; j < shortest_path.at(i).size(); j++){
-			std::cout << shortest_path.at(i).at(j) << " ";
-			if(shortest_path.at(i).at(j) != 0 && shortest_path.at(i).at(j) !=1){
-				std::multimap<size_t,const pw_alignment>::iterator it=indices_nodes.at(i).find(shortest_path.at(i).at(j));
+		for(size_t j = 0; j < this_short_path.size(); j++){
+			std::cout << this_short_path.at(j) << " ";
+			if(this_short_path.at(j) != 0 && this_short_path.at(j) !=1){
+				std::multimap<size_t,const pw_alignment>::iterator it=indices_nodes.at(i).find(this_short_path.at(j));
 				assert(it != indices_nodes.at(i).end());
 				const pw_alignment p = it->second;	
 
@@ -358,7 +388,7 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 	int startnode = current_name;
 	size_t from_on_read;
 	size_t pre_from_on_read = data.getSequence(read_id).length();
-	std::set<int> visited; //For loops, mau delete it late if seen_als handels all the situations
+	std::set<int> visited; //For loops, may delete it later if seen_als handels all the situations
 	//Create the first al from the remaining part of the current node!
 
 	while(startnode!=next_name){
@@ -1064,17 +1094,22 @@ void als_components<T>::get_subgraph(const pw_alignment & p){//Return a sub grap
 		name = -1*name;
 	}
 	std::cout << "name is " << name <<std::endl;
+	clock_t t1;
+	t1 = clock();
 //	rgraph.deep_first_search(name, ref_accession,r1);
+	t1 = clock() - t1;
+  	printf ("It took me %d clicks (%f seconds).\n",t1,((float)t1)/CLOCKS_PER_SEC);
+
 	clock_t t;
 	t = clock();
 	rgraph.bfs(name,ref_accession,r1);
 	t = clock() - t;
 	printf ("It took me %d clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC);
-	clock_t t1;
-	t1 = clock();
+//	clock_t t1;
+//	t1 = clock();
 //	rgraph.make_sub_graph(name,ref_accession,r1);
-	t1 = clock() - t1;
-  	printf ("It took me %d clicks (%f seconds).\n",t1,((float)t1)/CLOCKS_PER_SEC);
+//	t1 = clock() - t1;
+//  	printf ("It took me %d clicks (%f seconds).\n",t1,((float)t1)/CLOCKS_PER_SEC);
 //	assert(t > t1);
 /*	std::set<std::vector<int> > paths = rgraph.get_paths();
 	std::cout<< "path size is "<< paths.size()<<std::endl;
@@ -2073,7 +2108,7 @@ void als_components<T>::add_first_and_last_als(size_t & i, const pw_alignment & 
 		if(l2 < MAXGAP || (l2-(first_left-MAXGAP/2)<MAXGAP)){
 			std::cout<< "add it to the beginning "<< std::endl;
 			p.print();
-			looking_for_first_al(i,p,first_left);	
+			looking_for_first_al(i,p,first_left);	 
 		}
 	/*	if(p.getreference2()==1275){
 			std::cout<< "length " << length <<std::endl;
@@ -2426,6 +2461,7 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 						size_t to =seq_from_ref.length() -1;
 						unsigned int ref_id = rgraph.get_refid(ref_acc,this_p.at(j));//gets node name, retruns node id
 						if(this_p.at(j)>0){ 
+							std::cout << "is it here?? "<< this_p.at(j)<< std::endl;
 							pw_alignment nw_al(ref_out,read_out,from, read_from ,to, read_to, ref_id, read_id);
 							nw_al.print();
 							this_pal = nw_al;
@@ -2434,7 +2470,10 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 								add_edge_to_begin(comp, nw_al, read_acc, ref_acc);
 							}
 						}else{
-							pw_alignment nw_al(ref_out,read_out,to, read_from ,from, read_to, ref_id, read_id);
+							from = data.getSequence(ref_id).length()-1;
+							to = data.getSequence(ref_id).length()-1 - to; 
+							std::cout << "from " << from << " to " << to <<std::endl;
+							pw_alignment nw_al(ref_out,read_out,from, read_from ,to, read_to, ref_id, read_id);
 							nw_al.print();
 							this_pal = nw_al;
 							add_to_containers(comp, nw_al, current_al , ref_acc, read_acc, this_p.at(j), this_p.at(j));
@@ -2620,6 +2659,12 @@ void als_components<T>:: make_last_nw_als(size_t & comp, int& node_name, const p
 	std::map<size_t,size_t> cur_pre;
 	pw_alignment this_al = current_al;
 	std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(this_al);
+	if(id == node_indices.at(comp).end()){
+		node_indices.at(comp).insert(std::make_pair(this_al , index));
+		indices_nodes.at(comp).insert(std::make_pair(index, this_al));
+		index++;
+		id = node_indices.at(comp).find(this_al);
+	}
 	assert(id != node_indices.at(comp).end());
 	weight.insert(std::make_pair(id->second, 0.0));
 	std::string refin;
@@ -2684,6 +2729,18 @@ void als_components<T>:: make_last_nw_als(size_t & comp, int& node_name, const p
 				//Take a sub string and finish it here!(type should be changed)
 				refin = refin.substr(0,400);
 				type = 4;//end of read should be reached
+			}
+			bool NOEDGE = true;
+			std::map<int, std::set<int> >::iterator next_adjs = adjacencies.find(this_name);
+			if(next_adjs == adjacencies.end()) NOEDGE = true;
+			for(std::set<int>::iterator nex_adj = next_adjs->second.begin() ; nex_adj != next_adjs->second.end() ; nex_adj++){
+				std::set<int>::iterator onPaths = nodes_on_paths.find(*nex_adj);
+				if(onPaths != nodes_on_paths.end()){
+					NOEDGE = false;
+				}
+			}
+			if(NOEDGE == true){
+				type = 4;
 			}
 			assert(refin.length() <= MAXGAP);
 			needleman<T> nl(data, model, readin, refin);
@@ -2901,6 +2958,7 @@ void als_components<T>::looking_for_last_al(size_t & comp, const pw_alignment & 
 		if(seq_from_ref.length()>=MAXGAP){
 			//seq_from_ref.erase(seq_from_ref.begin()+MAXGAP,seq_from_ref.end());
 			//assert(seq_from_ref.length()==MAXGAP);
+			std::cout << "seq from ref length "<< seq_from_ref.length()<<std::endl;
 			std::string sub = seq_from_ref.substr(0,MAXGAP);
 			assert(sub.length() == MAXGAP);
 			if(p.getbegin1() < p.getend1()){
@@ -2948,7 +3006,9 @@ void als_components<T>::looking_for_last_al(size_t & comp, const pw_alignment & 
 			bool NOREF = false;*/
 		//	assert(paths.size() != 0);
 		//	if(paths.size()!= 0){
-			std::set<int> nodes_on_paths = rgraph.get_subgraph_nodes();
+		//	std::set<int> nodes_on_paths = rgraph.get_subgraph_nodes();
+			std::set<int> nodes_on_paths = rgraph.get_nodes();
+			std::cout << "nodes size "<< nodes_on_paths.size() <<std::endl;
 			if(nodes_on_paths.size() > 1){
 				if(seq_from_ref.length() > 0){
 					std::cout << "seq from node " << seq_from_ref.length() << std::endl;
@@ -2967,8 +3027,10 @@ void als_components<T>::looking_for_last_al(size_t & comp, const pw_alignment & 
 						}
 					}
 					if(p.getbegin1() > p.getend1()){
-						ref_from = data.getSequence(p.getreference1()).length()-1;
-						ref_to = r1 +1;
+					//	ref_from = data.getSequence(p.getreference1()).length()-1;
+					//	ref_to = r1 +1;
+						ref_from = l1-1;
+						ref_to = 0;
 					}
 					size_t al_end = new_al_begin + count -1 ;
 					pw_alignment p1(ref_out,read_out,ref_from,new_al_begin,ref_to,al_end,ref1,ref2);
@@ -3817,5 +3879,85 @@ void als_components<T>::add_to_maf(const pw_alignment & al, std::ofstream & outp
 	}
 
 }
+template<typename T>
+void als_components<T>::make_components(size_t & comp, std::vector<std::map<std::pair<size_t,size_t>,double> > & components, std::vector<std::set<size_t> > & comp_nodes, bool & FULLCOMP, size_t & no_comp){
+	std::map<std::pair<size_t,size_t>, bool> visited;
+	std::map<size_t, std::set<size_t> > temp_adj;
+	for(std::map<size_t , std::set<size_t> >::iterator it =adjacencies.at(comp).begin() ; it != adjacencies.at(comp).end(); it++){
+		for(std::set<size_t>::iterator this_adj = it->second.begin() ; this_adj != it->second.end() ;this_adj++){
+			std::pair<size_t, size_t> this_pair(it->first, *this_adj);
+	    		visited.insert(std::make_pair(this_pair,false));
+		}
+		temp_adj.insert(std::make_pair(it->first,it->second));
+ 	}
+	while(temp_adj.size() != 0){
+		std::map<std::pair<size_t,size_t>,double> component;
+		std::set<size_t> c_nodes;
+		std::map<size_t, std::set<size_t> >::iterator it = temp_adj.begin();
+		std::list<size_t> queue;
+		queue.push_back(it->first);
+		assert(queue.size()==1);
+		while(!queue.empty()){
+			size_t this_node = queue.front();
+			std::cout << "this node "<< this_node <<std::endl;
+			queue.pop_front();
+			it = temp_adj.find(this_node);
+			if(it != temp_adj.end()){
+				c_nodes.insert(this_node);
+				for(std::set<size_t>::iterator this_adj = it->second.begin() ; this_adj != it->second.end() ;this_adj++){
+					std::pair<size_t,size_t> this_pair(this_node, *this_adj);
+					std::map<std::pair<size_t,size_t> , bool>::iterator vis = visited.find(this_pair);
+					assert(vis != visited.end());
+					if(vis->second == false){
+						vis->second = true;
+						queue.push_back(*this_adj);
+						std::map<std::pair<size_t,size_t>,double>::iterator weight = weight_of_edges.at(comp).find(this_pair);
+						assert(weight != weight_of_edges.at(comp).end());
+						component.insert(std::make_pair(this_pair,weight->second));
+						c_nodes.insert(*this_adj);
+					}
+				}
+				temp_adj.erase(it);
+			}		}
+		components.push_back(component);
+		std::set<size_t>::iterator it1 = c_nodes.find(0);
+		std::set<size_t>::iterator it2 = c_nodes.find(1);
+		if(it1 != c_nodes.end() && it2 != c_nodes.end()){
+			no_comp = comp_nodes.size();	
+			FULLCOMP = true;
+		}else{
+		//	FULLCOMP = false;
+		}	
+		comp_nodes.push_back(c_nodes);
+	}
+}
 
+
+template<typename T>
+void als_components<T>::filter_als(size_t & comp){
+	size_t first_left, last_right;
+	std::multiset<pw_alignment,sort_pw_alignment_by_right>::reverse_iterator revit = ordered_als_by_right.at(comp).rbegin(); //finds the last alignment of the component
+	pw_alignment last_p = *revit;
+	size_t lastr, lastl;
+	last_p.get_lr2(lastl,lastr);
+	last_right = lastr;
+	size_t number = 0;
+	for(std::multiset<pw_alignment,sort_pw_alignment_by_left>::iterator it = alignments.at(comp).begin() ; it != alignments.at(comp).end(); it++){//For each alignment all of its successors are found
+		pw_alignment p = *it;
+		size_t l,r;
+		p.get_lr2(l,r);
+		if(it==alignments.at(comp).begin()){
+			first_left = l;
+		}
+		if(l <= number*MAXGAP/2 + first_left && l >= (number-1)*MAXGAP/2 + first_left ){
+
+
+		}else{
+
+
+		}
+	}
+
+
+}
 #endif

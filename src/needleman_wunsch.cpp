@@ -50,7 +50,7 @@
 			//Find delete of length j+1
 			char numdelete;
 			size_t delete_length = j;
-			count_first_row_delete(delete_length, numdelete,first_row); //Update the delete length return the last one as numdelete //TODO make it more efficient!
+			count_first_row_delete(delete_length, numdelete,first_row); //Update the delete length return the last one as numdelete 
 			keep_number.at(0).at(j)= 0;
 			delete_number.at(0).at(j)= j;
 			mod_matrix.at(0).at(j)= it->second.at((size_t)numdelete);
@@ -241,8 +241,10 @@
 				//if insertion(vertical) //TODO add insertion cost
 				previous_value =mod_matrix.at(i-1).at(j);	
 				previous_context = context_matrix.at(i-1).at(j);
-			//	if(previous_context.at(previous_context.length()-1) >=5+NUM_DELETE_DYN+NUM_KEEP_DYN) ins_penalty = ins_penalty + 500;
-			//	else ins_penalty = 0;
+			//	if(previous_context.at(previous_context.length()-1) >=5+NUM_DELETE_DYN+NUM_KEEP_DYN){
+			//		 ins_penalty = ins_penalty + 50;	
+			//	}
+			//	else ins_penalty = 1;
 				context = previous_context;
 				context +=(char) dnastring::base_to_index(ref.at(j-1));
 				std::map< std::string, std::vector<double>  >::const_iterator it= model_cost.find(context);
@@ -419,7 +421,7 @@
 		for(size_t i = pattern.size(); i > 0; i--){
 		//	std::cout << (size_t)pattern.at(i-1)<<std::endl; 
 			if((size_t)pattern.at(i-1) >=5 && (size_t)pattern.at(i-1)<5+NUM_DELETE_DYN){
-				cost += 10*(size_t)pattern.at(i-1)*it->second.at((size_t)pattern.at(i-1)); //XXX Just added  gap penalty 5*deletion
+				cost += 100*(size_t)pattern.at(i-1)*it->second.at((size_t)pattern.at(i-1)); //XXX Just added  gap penalty 100*deletion
 			}
 			else break;
 

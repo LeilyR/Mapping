@@ -438,6 +438,8 @@ void ref_graph::read_gfa_for_adj(std::string & gfafile){
 					if(dir1 == "+") dir1 = "-";
 				//	else dir1 = "+";
 					add_adjacencies(dir2,dir1, name2, name1);
+					add_adjacencies(dir1,name1);	
+
 				
 				}else{
 					dir2 = "+";
@@ -553,10 +555,11 @@ const void ref_graph::look_for_successor(int & node, size_t & length, size_t & c
 const unsigned int ref_graph::get_refid(size_t & refacc, int & seqname)const{
 	//Get accession name:
 	std::string accname = data.get_acc(refacc);
+	int name = seqname;
 	//convert int to string:
-	if( seqname < 0) seqname = -1*seqname;
+	if( name < 0) name = -1*name;
 	std::stringstream ss;
-	ss << seqname;
+	ss << name;
 	std::string longname = accname +":"+ss.str();
 	std::map<std::string, size_t> longname2seqidx = data.getLongname2seqidx();
 	std::map<std::string, size_t>::iterator findseq = longname2seqidx.find(longname);
@@ -588,7 +591,8 @@ void ref_graph::deep_first_search(int & startnode, std::string & refacc, size_t 
 	paths.clear();
 	nodes_on_paths.clear();
 	path_length.clear();
-	std::map<int, std::set<int> >::iterator adj = adjacencies.find(startnode);//XXX It is possible that a node has no adjacent node
+	std::map<int , std::vector<std::pair<std::vector<int>,size_t> > > parent_length;
+	std::map<int, std::set<int> >::iterator adj = adjacencies.find(startnode);//It is possible that a node has no adjacent node
 	if(adj != adjacencies.end()){
 		std::string seq_name = seqname(startnode);
 		size_t seqlength = seq_length(seq_name, refacc);
@@ -601,27 +605,42 @@ void ref_graph::deep_first_search(int & startnode, std::string & refacc, size_t 
  		}
 		//Recurssive dfs: 
 		std::vector<int> apath;
-		size_t parent_length = 0;
-
-		if(accu_length> MAXGAP){
+		std::vector<int> temp;
+	//	temp.push_back(0);
+		std::vector<std::pair<std::vector<int>,size_t> > this_pair;
+		this_pair.push_back(std::make_pair(temp,remainder));
+		
+		parent_length.insert(std::make_pair(startnode, this_pair));
+		if(remainder> MAXGAP){
 			apath.push_back(startnode);
 			nodes_on_paths.insert(startnode);
 			paths.insert(apath);
 		}else{
-    			look_for_neighbors(startnode, visited, refacc,accu_length,apath,parent_length);
+    			look_for_neighbors(startnode, visited, refacc,parent_length);
 		}
-	}//TODO else?!
+	}else{
+		std::vector<int> apath;		
+		apath.push_back(startnode);
+		nodes_on_paths.insert(startnode);
+		paths.insert(apath);
+	}
+	for(std::map<int , std::vector<std::pair<std::vector<int>,size_t> > >::iterator it = parent_length.begin() ; it != parent_length.end() ; it++){
+		std::cout<< "on node " << it->first << std::endl;
+		for(size_t i =0;i < it->second.size();i++){
+			std::cout<< it->second.at(i).first<<std::endl;
+			std::cout<< "with length "<< it->second.at(i).second <<std::endl;
+		}
+	}
 }
-void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , std::string & refacc, int & accu_length, std::vector<int> & apath, size_t & parent_length){//TODO Maybe i need to think of setting the parent length in a better way though it seems it works fine for the time being
+void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , std::string & refacc, std::map<int , std::vector<std::pair<std::vector<int>,size_t> > > & parent_length){
 	std::cout << "this node is "<< node << std::endl;
 	std::map<int,bool>::iterator it = visited.find(node);
 	assert(it != visited.end());
-	it->second = true;
 	std::string seq_name = seqname(node);
 	size_t seqlength = seq_length(seq_name, refacc);
-	std::cout << "its length is "<< seqlength<<std::endl;
+/*	std::cout << "its length is "<< seqlength<<std::endl;
 	if(accu_length<=MAXGAP){
-		apath.push_back(node);	
+		apath.push_back(node);	//TODO wrong
 		nodes_on_paths.insert(node);
 	}
 	std::cout << "apath size "<< apath.size() <<std::endl;
@@ -646,12 +665,54 @@ void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , st
 	for (std::set<int>::iterator adj = it1->second.begin(); adj != it1->second.end(); adj++){
 		std::cout << *adj << " ";
 	}
-	std::cout<<std::endl;
-	for (std::set<int>::iterator adj = it1->second.begin(); adj != it1->second.end(); adj++){
-		int adjacent = *adj;
-		std::string adj_name = seqname(adjacent);
-		size_t adjlength = seq_length(adj_name, refacc);
-		accu_length += adjlength;
+	std::cout<<std::endl;*/
+	assert(it->second == false);
+//	if(it->second == false){
+		it->second = true;
+		std::map<int, std::set<int> >::iterator it1 = adjacencies.find(node);
+		assert(it1 != adjacencies.end());
+		for(std::set<int>::iterator adj = it1->second.begin(); adj != it1->second.end(); adj++){
+			int adjacent = *adj;
+			std::string adj_name = seqname(adjacent);
+			size_t adjlength = seq_length(adj_name, refacc);
+			std::map<int , std::vector<std::pair<std::vector<int>,size_t> > >::iterator len = parent_length.find(node);
+			if(len != parent_length.end()){
+				bool LESSTHANMAX = false;
+				std::cout << "len second size "<< len->second.size() <<std::endl;
+				for(size_t i = 0; i < len->second.size();i++){
+					std::pair<std::vector<int>,size_t> this_pair = len->second.at(i);
+					std::cout<<"this pair first at "<< i << std::endl;
+					std::cout << this_pair.first << std::endl;
+					std::map<int,bool>::iterator it2 = visited.find(*adj);
+					if(this_pair.second < MAXGAP){
+						size_t length = this_pair.second + adjlength;
+						std::cout << "len "<< length <<std::endl;
+						std::map<int , std::vector<std::pair<std::vector<int>,size_t> > >::iterator adj_len = parent_length.find(adjacent);
+						std::vector<int> cur_path = this_pair.first;
+						cur_path.push_back(node);
+						std::pair<std::vector<int>, size_t> cur_pair(cur_path,length);
+						if( adj_len == parent_length.end()){
+							std::pair<std::vector<int> , size_t> temp_pair;
+							std::vector<std::pair<std::vector<int>, size_t> > temp_vector;
+						//	temp_vector.push_back(temp_pair);
+							parent_length.insert(std::make_pair(adjacent,temp_vector));
+							 adj_len = parent_length.find(adjacent);
+						}
+						assert(adj_len != parent_length.end());
+						std::cout<< "cur pair "<<cur_pair <<std::endl;
+						adj_len->second.push_back(cur_pair);
+						if(it2->second == false){
+						//	LESSTHANMAX = true;
+							int current_node = *adj;
+          						look_for_neighbors(current_node, visited,refacc,parent_length);
+						}
+						//add it to parent length, keep the current ones
+					}else{
+						//Do nothing
+					}
+				}
+	/*	accu_length += adjlength;
+		
 		if(adj == it1->second.begin()){
 			parent_length = seqlength;
 			std::cout << "parent length "<< parent_length <<std::endl;
@@ -661,11 +722,13 @@ void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , st
 		std::map<int,bool>::iterator it2 = visited.find(*adj);
 		assert(it2 != visited.end());
 		if (it2->second == false && accu_length < MAXGAP){
-			std::cout << "smaller"<<std::endl;
-			int current_node = *adj;
-          		look_for_neighbors(current_node, visited,refacc,accu_length,apath,parent_length);
-		}
-		else if(it2->second == false && accu_length >= MAXGAP){ //XXX > only and the = belonged to the previous condition
+			std::cout << "smaller"<<std::endl;*/
+			//	if(LESSTHANMAX==true){
+			//		int current_node = *adj;
+          		//		look_for_neighbors(current_node, visited,refacc,parent_length);
+			//	}
+			}
+/*		else if(it2->second == false && accu_length >= MAXGAP){ //XXX > only and the = belonged to the previous condition
 			std::cout << "here! " <<std::endl;
 			int current_node = *adj;
 			it2->second = true; 
@@ -699,7 +762,9 @@ void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , st
 		}
 	}
 	apath.pop_back();
-	std::cout<<"paths size is "<<paths.size()<<std::endl;
+	std::cout<<"paths size is "<<paths.size()<<std::endl;*/
+		}
+//	}
 }
 void ref_graph::make_sub_graph(int & startnode, std::string & refacc, size_t & right_on_ref_node){
 	sub_graph.clear();
@@ -1059,7 +1124,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 		//	nodes_on_paths.insert(it->first);		
 		}
 	}
-
+	std::cout << "nodes on path size is " << nodes_on_paths.size()<<std::endl;
 
 }
 void ref_graph::delete_path(std::vector<int> & this_path){
