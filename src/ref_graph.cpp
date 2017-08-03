@@ -57,7 +57,7 @@ void ref_graph::read_dot_file(std::string & refgraph, std::string & refacc){
 }
 
 void ref_graph::add_adjacencies(std::string & dir1 , std::string & dir2 , std::string & name1 , std::string & name2){
-	std::cout << "n1 "<<name1 << " n2 "<<name2 <<std::endl;
+//	std::cout << "n1 "<<name1 << " n2 "<<name2 <<std::endl;
 	int node1 = std::stoi(name1);//TODO it shoud be changed to size_t!!!!
 	int node2 = std::stoi(name2);
 	assert(node1 > 0 && node2 > 0);
@@ -167,7 +167,7 @@ void ref_graph::add_predecessor(int & this_node , int & pre_node){
 		pre = predecessors.find(this_node);
 	}
 	pre->second.insert(pre_node);
-	std::cout << "this node "<< this_node << " pre node " << pre_node<<std::endl;
+//	std::cout << "this node "<< this_node << " pre node " << pre_node<<std::endl;
 	
 }
 const std::map<int , std::set<int> > & ref_graph::get_adjacencies()const{
@@ -176,6 +176,7 @@ const std::map<int , std::set<int> > & ref_graph::get_adjacencies()const{
 
 
 std::set<std::vector<int> > ref_graph::get_predecessor(unsigned int & ref_id, bool dir , size_t & left_on_ref, size_t & length_on_read){//int is ref number if negetive means reverse complement should be taken in to account
+	std::cout << "ref name " << data.get_seq_name(ref_id) <<std::endl;
 	int seqname = std::stoi(data.get_seq_name(ref_id));
 	assert(seqname > 0);
 //	size_t refacc = data.accNumber(ref_id);
@@ -420,6 +421,14 @@ void ref_graph::read_gfa_for_adj(std::string & gfafile){
 		}else{
 			assert(line[0] == 'S' || line[0]=='L' || line[0] == 'P');
 		
+			if(line[0]=='S'){
+				std::vector<std::string> node;
+				strsep(line, "\t" , node);
+				std::string name = node.at(1);
+				std::string content = node.at(2);
+				nodes_content.insert(std::make_pair(std::stoi(name), content));
+			}
+			
 			if(line[0]== 'L'){
 				std::vector<std::string> nodes;
 				strsep(line, "\t" , nodes);
@@ -428,8 +437,8 @@ void ref_graph::read_gfa_for_adj(std::string & gfafile){
 				name2 = nodes.at(3);
 				dir1 = nodes.at(2);
 				dir2 = nodes.at(4);
-				std::cout << "L "<< line << std::endl;
-				std::cout << "name1 "<< name1 << " name2 " << name2 << " dir1 " << dir1 << " dir2 " << dir2<<std::endl;
+			//	std::cout << "L "<< line << std::endl;
+			//	std::cout << "name1 "<< name1 << " name2 " << name2 << " dir1 " << dir1 << " dir2 " << dir2<<std::endl;
 				add_adjacencies(dir1,dir2, name1, name2);
 				add_adjacencies(dir2,name2);
 				if(dir2 == "+"){
@@ -591,7 +600,8 @@ void ref_graph::deep_first_search(int & startnode, std::string & refacc, size_t 
 	paths.clear();
 	nodes_on_paths.clear();
 	path_length.clear();
-	std::map<int , std::vector<std::pair<std::vector<int>,size_t> > > parent_length;
+	parent_length.clear();
+//	std::map<int , std::vector<std::pair<std::vector<int>,size_t> > > parent_length;
 	std::map<int, std::set<int> >::iterator adj = adjacencies.find(startnode);//It is possible that a node has no adjacent node
 	if(adj != adjacencies.end()){
 		std::string seq_name = seqname(startnode);
@@ -606,9 +616,8 @@ void ref_graph::deep_first_search(int & startnode, std::string & refacc, size_t 
 		//Recurssive dfs: 
 		std::vector<int> apath;
 		std::vector<int> temp;
-	//	temp.push_back(0);
-		std::vector<std::pair<std::vector<int>,size_t> > this_pair;
-		this_pair.push_back(std::make_pair(temp,remainder));
+		std::set<std::pair<std::vector<int>,size_t> > this_pair;
+		this_pair.insert(std::make_pair(temp,remainder));
 		
 		parent_length.insert(std::make_pair(startnode, this_pair));
 		if(remainder> MAXGAP){
@@ -616,7 +625,7 @@ void ref_graph::deep_first_search(int & startnode, std::string & refacc, size_t 
 			nodes_on_paths.insert(startnode);
 			paths.insert(apath);
 		}else{
-    			look_for_neighbors(startnode, visited, refacc,parent_length);
+    			look_for_neighbors(startnode, visited, refacc);
 		}
 	}else{
 		std::vector<int> apath;		
@@ -624,16 +633,18 @@ void ref_graph::deep_first_search(int & startnode, std::string & refacc, size_t 
 		nodes_on_paths.insert(startnode);
 		paths.insert(apath);
 	}
-	for(std::map<int , std::vector<std::pair<std::vector<int>,size_t> > >::iterator it = parent_length.begin() ; it != parent_length.end() ; it++){
-		std::cout<< "on node " << it->first << std::endl;
-		for(size_t i =0;i < it->second.size();i++){
-			std::cout<< it->second.at(i).first<<std::endl;
-			std::cout<< "with length "<< it->second.at(i).second <<std::endl;
+	for(std::map<int , std::set<std::pair<std::vector<int>,size_t> > >::iterator it = parent_length.begin() ; it != parent_length.end() ; it++){
+		std::cout<< "on node " << it->first << " " << it->second.size() << std::endl;
+		for(std::set<std::pair<std::vector<int>,size_t> >::iterator it1 = it->second.begin() ; it1!=it->second.end() ; it1++){
+			std::pair<std::vector<int>,size_t> this_pair = *it1;
+			std::cout<< this_pair.first<<std::endl;
+			std::cout<< "with length "<< this_pair.second <<std::endl;
 		}
 	}
 }
-void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , std::string & refacc, std::map<int , std::vector<std::pair<std::vector<int>,size_t> > > & parent_length){
+void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , std::string & refacc){
 	std::cout << "this node is "<< node << std::endl;
+	nodes_on_paths.insert(node);
 	std::map<int,bool>::iterator it = visited.find(node);
 	assert(it != visited.end());
 	std::string seq_name = seqname(node);
@@ -675,36 +686,35 @@ void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , st
 			int adjacent = *adj;
 			std::string adj_name = seqname(adjacent);
 			size_t adjlength = seq_length(adj_name, refacc);
-			std::map<int , std::vector<std::pair<std::vector<int>,size_t> > >::iterator len = parent_length.find(node);
+			std::map<int , std::set<std::pair<std::vector<int>,size_t> > >::iterator len = parent_length.find(node);
 			if(len != parent_length.end()){
 				bool LESSTHANMAX = false;
 				std::cout << "len second size "<< len->second.size() <<std::endl;
-				for(size_t i = 0; i < len->second.size();i++){
-					std::pair<std::vector<int>,size_t> this_pair = len->second.at(i);
-					std::cout<<"this pair first at "<< i << std::endl;
+				for(std::set<std::pair<std::vector<int>,size_t> >::iterator len_it = len->second.begin() ; len_it != len->second.end() ;len_it++){
+					std::pair<std::vector<int>,size_t> this_pair = *len_it;
+					std::cout<<"this pair first  " << std::endl;
 					std::cout << this_pair.first << std::endl;
 					std::map<int,bool>::iterator it2 = visited.find(*adj);
 					if(this_pair.second < MAXGAP){
 						size_t length = this_pair.second + adjlength;
 						std::cout << "len "<< length <<std::endl;
-						std::map<int , std::vector<std::pair<std::vector<int>,size_t> > >::iterator adj_len = parent_length.find(adjacent);
+						std::map<int , std::set<std::pair<std::vector<int>,size_t> > >::iterator adj_len = parent_length.find(adjacent);
 						std::vector<int> cur_path = this_pair.first;
 						cur_path.push_back(node);
 						std::pair<std::vector<int>, size_t> cur_pair(cur_path,length);
 						if( adj_len == parent_length.end()){
-							std::pair<std::vector<int> , size_t> temp_pair;
-							std::vector<std::pair<std::vector<int>, size_t> > temp_vector;
-						//	temp_vector.push_back(temp_pair);
-							parent_length.insert(std::make_pair(adjacent,temp_vector));
+							std::set<std::pair<std::vector<int>, size_t> > temp_set;
+							parent_length.insert(std::make_pair(adjacent,temp_set));
 							 adj_len = parent_length.find(adjacent);
 						}
 						assert(adj_len != parent_length.end());
+						std::cout << "adjacent "<< adjacent << std::endl;
 						std::cout<< "cur pair "<<cur_pair <<std::endl;
-						adj_len->second.push_back(cur_pair);
+						adj_len->second.insert(cur_pair);
 						if(it2->second == false){
 						//	LESSTHANMAX = true;
 							int current_node = *adj;
-          						look_for_neighbors(current_node, visited,refacc,parent_length);
+          						look_for_neighbors(current_node, visited,refacc);
 						}
 						//add it to parent length, keep the current ones
 					}else{
@@ -893,7 +903,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 	path_length.clear();
 	std::set<int> seen;
 	seen.insert(startnode);
-	std::map<int, std::set<int> >::iterator adj = dynamic_adjacencies.find(startnode);//It is possible that a node has no adjacent node
+	std::map<int, std::set<int> >::iterator adj = dynamic_adjacencies.find(startnode);//It is possible that a node has no adjacent node 
 	std::cout << "start node in bfs "<< startnode <<std::endl;
 	if(adj != dynamic_adjacencies.end()){
 		std::string seq_name = seqname(startnode);
@@ -1044,7 +1054,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 							//Remove it from the queue
 						}
 						EXPANDED = true;
-					}else{//XXX Just added the 'else' hope it works , XXX It solved the issue for the graphs with no loop but it is not working for graphs with loop
+					}else{//XXX Just added the 'else' hope it works , XXX It solved the issue for the graphs with no loop but not sure if it is not working for graphs with loop
 						std::cout<< "it is seen! "<<std::endl;
 						std::map<int, std::vector<std::vector<int> > >::iterator from_adj = all_paths.find(startnode);
 						if(from_adj != all_paths.end()){
@@ -1194,4 +1204,173 @@ const std::set<int> ref_graph::get_nodes_on_paths(const int & next)const{
 }
 const std::set<int> ref_graph::get_subgraph_nodes()const{
 	return sub_graph_nodes;
+}
+
+
+void Kgraph::make_Kgraph(){
+	std::map<int, std::string > nodes = rgraph.get_nodes_content();//TODO DFS algorithm
+	std::map<int , bool> visited;
+	for(std::map<int, std::string >::iterator it = nodes.begin() ; it != nodes.end(); it++){
+		assert(it->first > 0);
+		visited.insert(std::make_pair(it->first,false));
+		visited.insert(std::make_pair(-1*it->first,false));
+		
+	}
+///	for(std::map<int, std::string >::iterator it = nodes.begin() ; it != nodes.end(); it++){
+		std::map<int, std::string >::iterator it = nodes.begin(); //TODO beginning of all paths!
+	//	std::string remainder;
+	//	std::string pre_pre_seq;
+		std::map<int, bool>::iterator vis = visited.find(it->first);
+		assert(vis != visited.end());
+		std::map<std::pair<int,int>, std::vector<std::string> > remainder;
+		std::string temp_seq;
+		std::vector<std::string> temp;
+		temp.push_back(temp_seq);
+		remainder.insert(std::make_pair(std::make_pair(it->first,it->first),temp));
+		if(vis->second == false){
+			dfs(remainder , it->first , it->first, visited);
+		}
+	//	vis = visited.find(-1*it->first);
+	//	if(vis->second == false){
+	//		dfs(remainder,pre_pre_seq , -1*it->first, visited);
+	//	}
+///	}
+}
+void Kgraph::dfs(std::map<std::pair<int,int>, std::vector<std::string> > & remainder, int  this_node, int  pre_node, std::map<int,bool> & visited){
+	//	std::map<int,bool>::iterator vis = visited.find(this_node);
+	/*	for(std::map<std::string , std::set<std::string> >::iterator it = edges.begin() ; it != edges.end() ; it++){
+			std::cout << "edges from "<< it->first << " to" <<std::endl;
+			for(std::set<std::string>::iterator it1 = it->second.begin() ; it1 != it->second.end() ; it1++){
+				std::cout << *it1<<std::endl;
+			}
+		}*/
+		std::string pre_pre_seq;
+		std::map<std::pair<int,int>, std::vector<std::string> >::iterator it = remainder.find(std::make_pair(this_node, pre_node));
+		assert(it != remainder.end());
+		assert(it->second.size() ==1);
+		std::string leftover = it->second.at(0);
+		remainder.erase(it); //XXX ??? why??
+		std::list<std::pair<std::pair<int,int>,std::string> > queue;
+		std::string temp_seq;
+		std::pair<std::pair<int,int>,std::string> temp(std::make_pair(this_node,this_node),temp_seq);
+		queue.push_back(temp);
+		int start_node = this_node;
+		while(!queue.empty()){
+	//		vis->second = true;
+			std::pair<std::pair<int,int>,std::string> start_pair = queue.front();
+			std::string leftover = start_pair.second;
+			start_node = start_pair.first.first;
+		//	std::cout << "start_node " << start_node <<std::endl;
+			queue.pop_front();
+			std::string content;
+			if(leftover.length()>0){
+				content = leftover;
+			}
+			if(this_node > 0){
+				content += rgraph.get_content(this_node);
+			}else{ //TODO check if it is correct!
+				int rev = -1*this_node;
+				std::string temp = rgraph.get_content(rev);
+				std::string tempseq;
+				get_reverse_complement(temp, tempseq);
+				content += tempseq;
+			}
+			if(content.length() >= 2*K){
+				int pre_seq_value;
+				std::string pre_seq;
+			/*	if(remainder.length()== K){
+					pre_seq = remainder;
+					Hash hashVa(pre_seq);
+					const int h = hashVa.get_hvalue();
+					pre_seq_value = h;
+				}else if(remainder.length() > 0 && remainder.length() < K){
+					assert(pre_pre_seq.length()>0);
+					pre_seq = pre_pre_seq;
+					Hash hashVa(pre_seq);
+					const int h = hashVa.get_hvalue();
+					pre_seq_value = h;
+				}*/
+				for (size_t i = 0; i < content.length(); i += K){
+    					std:: string seq = content.substr(i, K);
+				//	Hash hashVa(seq);
+				//	const int h = hashVa.get_hvalue();
+					std::map<std::string , std::set<std::string> >::iterator it2 = edges.find(seq);
+					if(it2 == edges.end()&&seq.length()==K){
+						edges.insert(std::make_pair(seq , std::set<std::string>()));
+					}
+					if(pre_seq.length() != 0 && seq.length()==K){
+						it2 = edges.find(pre_seq);					
+						assert(it2 != edges.end());
+						it2->second.insert(seq);
+					//	std::cout << "add an edge from " << pre_seq << " to "<< seq <<std::endl;
+					}
+					pre_pre_seq = pre_seq;
+					pre_seq = seq;
+				//	pre_seq_value = h;
+				}
+				if(pre_seq.length()==K){
+					leftover = pre_seq;
+				}else{
+					assert(pre_seq.length()<K);
+					leftover = pre_pre_seq + pre_seq;
+				}
+			}else{
+				leftover = content;	
+			//	std::cout << "rem " << leftover << std::endl;	
+			}
+			std::set<int> adjs = rgraph.get_adjacencies(start_node);
+		//	std::cout << "adj size " << adjs.size() <<std::endl;
+			for(std::set<int>::iterator it = adjs.begin() ; it != adjs.end() ; it++){
+		/*		std::map<std::pair<int,int>, std::vector<std::string> >::iterator it1 = remainder.find(std::make_pair(*it,this_node));
+			//	std::cout << "this adj " << *it<<std::endl;
+				assert(it1 == remainder.end());
+				std::vector<std::string> temp;
+				temp.push_back(leftover);
+				remainder.insert(std::make_pair(std::make_pair(*it,this_node), temp));*/
+				queue.push_back(std::make_pair(std::make_pair(*it,start_node),leftover));
+			}
+		//	for(std::set<int>::iterator it = adjs.begin() ; it != adjs.end() ; it++){
+		//		dfs(remainder, *it, this_node , visited);
+		//	}
+		}
+}
+
+void ref_graph::merge_nodes(size_t & ref_acc , size_t & LENGTH){
+	merge_nodes_bfs(ref_acc, LENGTH);
+}
+
+void ref_graph::merge_nodes_bfs(size_t & ref_acc , size_t & LENGTH){//TODO was thinking of add nodes together and create a new graph! //TODO how to deal with loops here???!!
+	std::map<int, std::set<int> >::iterator it = adjacencies.begin();
+	int startnode = it->first;
+
+	std::list<int> queue;
+	std::map<int, std::vector<std::pair<std::vector<int> , size_t > > > length;
+	length.insert(std::make_pair(startnode , std::vector<std::pair<std::vector<int> , size_t > >()));
+
+	queue.push_back(startnode);
+	while(!queue.empty()){
+		startnode = queue.front();
+		queue.pop_front();
+		it = adjacencies.find(startnode);
+		if(it->second.size()!=0){
+			std::map<int, std::vector<std::pair<std::vector<int> , size_t > > >::iterator prelength = length.find(startnode);
+			assert(prelength != length.end());
+			/* raw thought:
+			size_t adj_length = length of it->second.at(i);
+			adj_length+ all prelength
+			if < Length
+				add
+			else
+				add to new_edge - start from adj.size+1
+				Replace that part of path with its new name ?
+			*/
+			
+
+		}
+
+
+
+
+	}
+
 }

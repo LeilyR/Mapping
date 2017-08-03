@@ -3,15 +3,16 @@
 
 #include "data.hpp"
 #include "pw_alignment.hpp"
+//#include "hash.hpp"
 #define MAXGAP 400
-
+#define K 25
 //This class is only used to read the dot file includes the reference graph
 class ref_graph{
 	public:
 	ref_graph( const all_data & d):data(d){
-		longname2seqidx = data.getLongname2seqidx();
-		std::map<std::string, size_t>::iterator longname = longname2seqidx.begin();
-		std::cout << "the begin is "<< longname->first<<std::endl;
+	//	longname2seqidx = data.getLongname2seqidx();
+	//	std::map<std::string, size_t>::iterator longname = longname2seqidx.begin();
+	//	std::cout << "the begin is "<< longname->first<<std::endl;
 	}
 	~ref_graph(){}
 	void read_dot_file(std::string &, std::string &);
@@ -31,7 +32,7 @@ class ref_graph{
 	size_t seq_length(std::string &, std::string &);
 	std::string seqname(int & );
 	void deep_first_search(int &, std::string & , size_t & );
-	void look_for_neighbors(int & node, std::map<int,bool> & visited , std::string & refacc, std::map<int , std::vector<std::pair<std::vector<int>,size_t> > > & parent_length);
+	void look_for_neighbors(int & node, std::map<int,bool> & visited , std::string & refacc);
 	void bfs(int & startnode, std::string & refacc, size_t & right_on_ref);
 	void delete_path(std::vector<int> & this_path);
 	const std::set<vector<int> > get_paths()const;
@@ -42,8 +43,11 @@ class ref_graph{
 	std::set<int> get_adjacencies(int & node)const{
 		std::set<int> nodes;
 		std::map<int, std::set<int> >::const_iterator it = adjacencies.find(node);
-		if( it != adjacencies.end()){
-			nodes = it->second;
+		if(it == adjacencies.end()){
+			std::cout << "END"<<std::endl;
+		}else{
+		//	std::cout << "HERE"<<std::endl;	
+			nodes = it->second;		
 		}
 		return nodes;
 	}
@@ -57,6 +61,30 @@ class ref_graph{
 		return nodes;
 	}
 	void make_sub_graph(int & , std::string & , size_t & );
+	std::set<std::pair<std::vector<int>,size_t> > get_parent_length(int & node)const{ 
+		std::set<std::pair<std::vector<int>,size_t> > temp;
+		std::map<int , std::set<std::pair<std::vector<int>,size_t> > >::const_iterator it= parent_length.find(node);
+		if(it != parent_length.end()){
+			return it->second;
+		}
+		return temp;
+	}
+	const std::map<int, std::set<std::pair<std::vector<int>,size_t> > > get_parent_length()const{ 
+		return parent_length;
+	}
+	const std::map<int , std::string> get_nodes_content()const{
+		return nodes_content;
+	}
+
+	const std::string get_content(int & node)const{
+		std::map<int, std::string>::const_iterator it = nodes_content.find(node);
+		assert(it != nodes_content.end());
+		return it->second;
+
+	}
+
+	void merge_nodes(size_t &, size_t &);
+	void merge_nodes_bfs(size_t & ref_acc, size_t & length);
 	private:
 	const all_data & data;
 	std::map<std::string, size_t> longname2seqidx;
@@ -64,7 +92,7 @@ class ref_graph{
 	std::map<int, std::set<int> > adjacencies;
 	std::map<int, std::set<int> > predecessors;
 
-	std::map<int, std::set<int> > dynamic_adjacencies; //It is used for bfs. It has the same content as adjacencies at the begining but whenever bfs is called they gradually reduced! 
+	std::map<int, std::set<int> > dynamic_adjacencies; //It is used for bfs. It has the same content as adjacencies at the begining but whenever bfs is called they gradually reduced!  //XXX Guess it is not neccessary anymore check and delete if it is not used!!
 
 	std::set<vector<int> > paths;
 	std::set<int> nodes_on_paths;
@@ -74,6 +102,33 @@ class ref_graph{
 	std::set<int> sub_graph_nodes;
 	std::map<int , std::set<int> > sub_graph;
 	std::map<int, std::set<int> > pre_nodes_on_subgraph;
+
+	std::map<int , std::set<std::pair<std::vector<int>,size_t> > > parent_length;
+	std::map<int, std::string> nodes_content;
+
+	std::map<int , std::set<int> > new_edges; //XXX Add the end dont forget that the negative directions need to be added.
+	std::map<int , std::vector<int> > old_edges; //Has merged nodes and from which nodes they came
+
 };
 
+
+class Kgraph{
+	public:
+		Kgraph(const ref_graph & rg):rgraph(rg){}
+		void make_Kgraph();
+		void get_reverse_complement(std::string & sequence_in , std::string & sequence_out){
+			for(size_t i = sequence_in.size(); i >0; i--){
+				sequence_out += dnastring::complement(sequence_in.at(i-1));
+			}
+		}
+		void dfs(std::map<std::pair<int,int>, std::vector<std::string> > & remainder, int  this_node, int  pre_node , std::map<int,bool> & visited);
+		const std::map<std::string, std::set<std::string> > get_edges()const{
+			return edges;
+		}
+		private:
+		const ref_graph & rgraph;
+		std::map<std::string , std::set<std::string> > edges; // Add hash value of nodes ??!!
+			
+
+};
 #endif

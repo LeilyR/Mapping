@@ -846,7 +846,7 @@ void test_reveal::read_gfa(std::ifstream & gfa){
 			std::vector<std::string> ref_parts;
 			strsep(parts.at(4),":",ref_parts);
 			to = from + parts.at(2).length()-1;
-			if(ref_parts.at(2).at(0)=='0'){
+			if(ref_parts.at(2).at(0)=='1'){ //XXX Specific!
 				std::cout << "id " << id <<std::endl;
 				ref_graph_nodes.insert(std::make_pair(id,std::make_pair(from,to)));
 				from = to + 1;
@@ -859,7 +859,7 @@ void test_reveal::read_gfa(std::ifstream & gfa){
 	}
 
 }
-void test_reveal::read_the_result(std::ifstream & mapping_maf){ //Read the mapping maf file
+void test_reveal::read_the_result(std::ifstream & mapping_maf , std::map<std::string, std::pair<size_t, size_t> > & contigs){ //Read the mapping maf file
 	size_t accu_pos = 0;
 	if(mapping_maf) {
 		std::string str;
@@ -870,7 +870,6 @@ void test_reveal::read_the_result(std::ifstream & mapping_maf){ //Read the mappi
 					std::string al2;
 					getline(mapping_maf, al1);
 					getline(mapping_maf, al2);
-	
 					//al1 is from ref
 					std::vector<std::string> parts1;
 					strsep(al1," ",parts1);
@@ -890,31 +889,56 @@ void test_reveal::read_the_result(std::ifstream & mapping_maf){ //Read the mappi
 				//	name_and_dir += parts1.at(4);
 				//	nodes.push_back(name_and_dir);
 
-					//al1 is from read
+					//al2 is from read
 					std::vector<std::string> parts2;
 					strsep(al2," ",parts2);
 					assert(parts2.size()==7); 
 					std::vector<std::string> readname_parts;
 					strsep(parts2.at(1),":",readname_parts);
-					std::string sub = readname_parts.at(1).substr(4);
-				//XXX	std::string sub = readname_parts.at(1);
-
+				//XXX ecoli	std::string sub = readname_parts.at(1).substr(4);
+					std::string sub = readname_parts.at(1); //XXX Yeast
+				//XXX yeast	std::vector<std::string> pos_parts;
+				//XXX yeast	strsep(sub,"|",pos_parts); //XXX Yeast
 					std::stringstream sstream3(sub);
+				//XXX yeast	std::stringstream sstream3(pos_parts.at(0)); //XXX Yeast
 					size_t read_id;
 					sstream3 >> read_id;
 					std::cout << "read id " << read_id << std::endl;
 					std::stringstream sstream1(parts2.at(2));
 					size_t read_pos;
 					sstream1 >> read_pos;
-				//	std::cout << "read pos "<<read_pos<<std::endl;
+					std::cout << "read pos "<<read_pos<<std::endl;
 					std::stringstream sstream2(parts2.at(3));					
 					size_t al_length;
 					sstream2 >> al_length;
-					size_t from = read_id*30030 + read_pos;
-					size_t to = read_id*30030 + read_pos + al_length-1;
-				//	size_t from = accu_pos;
-				//	size_t to = accu_pos + al_length -1;
-				//	accu_pos += al_length;
+					std::cout << "al length " << al_length <<std::endl;
+				//XXX ecoli	size_t from = read_id*30030 + read_pos;
+				//XXX ecoli	size_t to = read_id*30030 + read_pos + al_length-1;
+					size_t from = read_id*15000 + read_pos;
+					size_t to = read_id*15000 + read_pos + al_length-1;
+
+				/*XXX yeast	size_t to_on_read = read_pos + al_length-1;
+					std::stringstream sstreamfrom(pos_parts.at(2)); //XXX Yeast
+					size_t from_on_contig; //Yeast
+					sstreamfrom >> from_on_contig; //Yeast
+					from_on_contig +=read_pos;
+					std::vector<std::string> to_parts;
+					std::cout << pos_parts.at(3) <<std::endl;
+					strsep(pos_parts.at(3)," ",to_parts);
+					std::cout << "to parts size: "<< to_parts.size() <<std::endl;
+					std::stringstream sstreamto(to_parts.at(0)); //XXX Yeast
+					size_t to_on_contig;
+					sstreamto >> to_on_contig;
+					std::cout << al_length << " " << from_on_contig << " " << to_on_contig<<std::endl;
+				//TODO	assert(al_length-1 + from_on_contig <= to_on_contig);
+					std::cout << pos_parts.at(1)<<std::endl;
+					std::map<std::string, std::pair<size_t, size_t> >::iterator contig = contigs.find(pos_parts.at(1));
+					assert(contig != contigs.end());
+					size_t from = contig->second.first + from_on_contig;
+					size_t to = from + al_length-1;
+					std::cout << to << " " << contig->second.second <<std::endl;
+					assert(to <= contig->second.second);
+				//	accu_pos += al_length; */
 				//	std::cout << "from " << from << " to " << to << " new accu "<< accu_pos << " read pos " << read_pos << " length " << al_length <<std::endl;
 					from_mapping_output.insert(std::make_pair(ref_id, std::make_pair(from,to)));
 					std::cout<< "on "<< ref_id << " from "<< from << " to " << to << std::endl;

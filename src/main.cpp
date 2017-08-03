@@ -24,8 +24,7 @@
 #include "ref_graph.hpp"
 #include "map_read.hpp"
 #include "test_mapping.hpp"
-
-
+#include "hash.hpp"
 
 #define VERSION "0.0.1" 
 #define NUMVERISON 0
@@ -257,7 +256,8 @@ int make_long_reads(int argc, char * argv[]){
 	std::string outputfastafile(argv[3]);
 
 	std::ifstream fastain(inputfastafile.c_str());
-	std::map<std::string , std::string> contigs; // first string is the name, the second one is the sequence content
+//	std::map<std::string , std::string> contigs; // first string is the name, the second one is the sequence content
+	std::vector<std::pair<std::string,std::string> > contigs;
 	if(fastain) {
 		std::string str;
 		std::stringstream curseq;
@@ -267,10 +267,10 @@ int make_long_reads(int argc, char * argv[]){
 		while(getline(fastain, str)){
 			if(str.at(0)=='>'){ //Separate with | keep the first two parts as its name
 				std::vector<std::string> parts;
-				strsep(str,"|",parts);
+				strsep(str,"_",parts);
 				name = parts.at(1);
 				if(curseq.str().size()!=0){
-					contigs.insert(std::make_pair(pre_name,curseq.str()));
+					contigs.push_back(std::make_pair(pre_name,curseq.str()));
 					curseq.str("");
 				}else{
 					std::cerr << "Warning: A read of length zero is skipped " <<std::endl;
@@ -283,7 +283,7 @@ int make_long_reads(int argc, char * argv[]){
 		}
 		// store last reas
 		if(curseq.str().size()!=0){
-			contigs.insert(std::make_pair(pre_name,curseq.str()));
+			contigs.push_back(std::make_pair(pre_name,curseq.str()));
 		}else{
 			std::cerr << "Warning: A read of length zero is skipped " <<std::endl;
 		}
@@ -293,54 +293,62 @@ int make_long_reads(int argc, char * argv[]){
 		std::cerr << "Error: cannot read " << std::endl;
 		exit(1);
 	}
-	std::multimap<std::string, std::string> reads; //name, content
-	for(std::map<std::string,std::string>::iterator it = contigs.begin() ; it != contigs.end() ; it++){
+//	std::multimap<std::string, std::string> reads; //name, content
+	std::vector<std::pair<std::string, std::string> > reads;
+//	for(std::map<std::string,std::string>::iterator it = contigs.begin() ; it != contigs.end() ; it++){
+	for(size_t l =0; l < contigs.size() ; l++){
 		//Break the sequence into shorter pieces
-		std::string contig = it->second;
+		std::string contig = contigs.at(l).second;
 		if(contig.length() > 15000){
-			std::cout << "long contig"<< it->first << std::endl;
+			std::cout << "long contig"<< contigs.at(l).first << std::endl;
 			for(size_t i = 0; i < contig.length()/15000 ; i++){
-				std::string this_read = contig.substr(i*15000, (i+1)*15000-1);
+			//	std::string this_read = contig.substr(i*15000, (i+1)*15000-1);
+				std::string this_read = contig.substr(i*15000, 15000);
 				std::stringstream name;
-				name << it->first << "|" << i*15000<<"|"<<(i+1)*15000-1;
-				reads.insert(std::make_pair(name.str(),this_read));
+				name << contigs.at(l).first << "|" << i*15000<<"|"<<(i+1)*15000-1;
+				assert(this_read.length() <=15000);
+				reads.push_back(std::make_pair(name.str(),this_read));
 			}
 			std::string this_read = contig.substr((contig.length()/15000)*15000, contig.length()-1);
 			std::stringstream name;
-			name<< it->first << "|"<< (contig.length()/15000)*15000 << "|" << contig.length()-1;
-			reads.insert(std::make_pair(name.str(), this_read));
+			name<< contigs.at(l).first << "|"<< (contig.length()/15000)*15000 << "|" << contig.length()-1;
+			assert(this_read.length() <=15000);
+			reads.push_back(std::make_pair(name.str(), this_read));
 
 		}else{
 			std::stringstream name;
-			name<<it->first<< "|" << 0 << "|" << contig.length()-1;
-			reads.insert(std::make_pair(name.str(),contig));
+			name<<contigs.at(l).first<< "|" << 0 << "|" << contig.length()-1;
+			assert(contig.length()<=15000);
+			reads.push_back(std::make_pair(name.str(),contig));
 		}
 	}
 	size_t count = 0;
 	std::ofstream fastaout(outputfastafile.c_str());
 
-	for(std::multimap<std::string, std::string>::iterator it = reads.begin() ; it != reads.end() ; it++){
+//	for(std::multimap<std::string, std::string>::iterator it = reads.begin() ; it != reads.end() ; it++){
+	for(size_t l =0; l < reads.size() ; l++){
+		assert(reads.at(l).second.length() <= 15000);
 		size_t rest = 0;
-		fastaout<<">"<<count<< "|" << it->first <<std::endl;
+		fastaout<<">"<<count<< "|" << reads.at(l).first <<std::endl;
 		count++;
-		if(it->second.length() > 70){
-			for(size_t i = 0; i < it->second.length()-70; i++){
+		if(reads.at(l).second.length() > 70){
+			for(size_t i = 0; i < reads.at(l).second.length()-70; i++){
 				for(size_t j = i; j < i+70;j++){
-					fastaout<<it->second.at(j);
+					fastaout<<reads.at(l).second.at(j);
 				}
 				i +=69;
 				rest = i+1;
 				fastaout<<std::endl;
 			}
 			size_t length = 0;
-			for(size_t i = rest ; i < it->second.length();i++){
-				fastaout<<it->second.at(i);
+			for(size_t i = rest ; i < reads.at(l).second.length();i++){
+				fastaout<<reads.at(l).second.at(i);
 				length++;
 			}
 			fastaout<<std::endl;
 			assert(length <= 70);
 		}else{
-			fastaout<<it->second<<std::endl;
+			fastaout<<reads.at(l).second<<std::endl;
 		}
 	}
 
@@ -525,6 +533,8 @@ int do_read_map(int argc, char * argv[]){
 		rgraph.read_gfa_for_adj(refgfa);
 	}
 	std::cout << "after gfa "<<std::endl;
+	size_t LENGTH = 400;
+	rgraph.merge_nodes(ref_acc,LENGTH);
 	int test_node = 31888;
 	std::set<int> temp_adj = rgraph.get_adjacencies(test_node);
 	for(std::set<int>::iterator it = temp_adj.begin() ; it != temp_adj.end() ; it++){
@@ -563,7 +573,7 @@ int do_read_map(int argc, char * argv[]){
 	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
 //	deep_first df(data, adjacencies);//Deep first search algorithm on reference graph nodes to finde sub graph of length MAXGAP
 //	for(size_t i =0; i < all_als.size();i++){
-//	size_t i = 227;
+//	size_t i = 1144;
 	for(size_t i =0; i < all_als.size();i++){
 		std::cout <<"read i  "<< i  <<std::endl;
 		std::vector<pw_alignment> alignments = all_als.at(i);
@@ -599,7 +609,7 @@ int do_read_map(int argc, char * argv[]){
 		//	std::cout << data.get_seq_name(193)<< " " << data.get_seq_name(303) <<std::endl;
 			ccs.find_als_on_paths(output,acc,readacc);//It also calls dijkstra algorithm inside
 		}
-//		exit(0); //XXX Temp
+	//	exit(0); //XXX Temp
 	}
 	std::cout << "done! "<<std::endl;
 
@@ -766,22 +776,48 @@ int check_sim_mapping_result(int argc, char * argv[]){
 
 }
 int do_test_reveal(int argc , char* argv[]){
-	if(argc< 3){
-		std::cerr<< "Program: test_reveal"<<std::endl;
-		std::cerr<< "*input: mapping maf file"<<std::endl;
+	if(argc< 4){
+		std::cerr << "Program: test_reveal"<<std::endl;
+		std::cerr << "*input: mapping maf file"<<std::endl;
 		std::cerr << "*input: reveal GFA" <<std::endl;
+		std::cerr << "*input: fasta file includes the genome of interest" << std::endl;
 		return 1;
 	}
 
 	std::string maffile(argv[2]);
 	std::string gfafile(argv[3]);
+	std::string fastafile(argv[4]);
 	std::ifstream mafin(maffile.c_str());
 	std::ifstream gfain(gfafile.c_str());
+	std::ifstream fastain(fastafile.c_str());
 	test_reveal test;
 	
 	test.read_gfa(gfain);
 	std::cout << "gfa was read! "<<std::endl;
-	test.read_the_result(mafin);
+	std::map<std::string , std::pair<size_t , size_t> > contigs;
+/*	size_t from = 0; //XXX used it for genomes with several contigs
+	size_t to = 0;
+	std::string this_contig;
+	std::string str;
+	while(getline(fastain,str)){	
+		if(str.at(0)=='>'){
+			std::vector<std::string> parts;
+			strsep(str,"|",parts);
+			assert(parts.size()==5);
+			if(this_contig.length() != 0){
+				contigs.insert(std::make_pair(this_contig, std::make_pair(from,to-1)));
+			}
+			this_contig = parts.at(1);
+			from = to;
+		}else{
+			to += str.length();
+		}
+	}
+	contigs.insert(std::make_pair(this_contig, std::make_pair(from,to-1)));
+	for(std::map<std::string, std::pair<size_t, size_t> >::iterator it = contigs.begin() ; it != contigs.end() ; it++){
+		std::cout << it->first << " " << it->second.first << " " << it->second.second << std::endl;
+	}*/
+	test.read_the_result(mafin, contigs);
 	test.compare_with_reveal();
 
 }
@@ -1059,6 +1095,32 @@ int needleman_wunsch(int argc, char * argv[]){
 	return 0;
 }
 
+int make_k_graph(int argc, char * argv[]){
+	if(argc < 3){
+		std::cerr << "Program: make_kgraph" << std::endl;
+		std::cerr << "* gfa file" << std::endl;
+		std::cerr << "* fasta file includes all the reads "<< std::endl;
+		std::cerr << "* sequencer error rate "<< std::endl;
+		return 1;
+	}
+	std::string gfain(argv[2]);
+	std::string fastain(argv[3]);
+	size_t mismatch = atoi(argv[4]); //Pacbio has 15% error for CLR reads
+	all_data d;
+	ref_graph rgraph(d);
+	rgraph.read_gfa_for_adj(gfain);
+	Kgraph kg(rgraph);
+	kg.make_Kgraph();
+	d.read_fasta(fastain);
+	mismatch += 10; // Add a Confidence interval
+	for(size_t i = 0; i < d.get_reads().size(); i++){
+		std::string this_read = d.get_reads().at(i);
+		readmap readm(kg,this_read, mismatch);
+		
+
+	}
+
+}
 #if !TEST
 	
 int main(int argc, char * argv[]) {
@@ -1098,6 +1160,9 @@ int main(int argc, char * argv[]) {
 	}
 	else if(0== program.compare("sim_perfect_reads")){
 		return make_long_reads(argc,argv);
+	}
+	else if(0 == program.compare("make_kgraph")){
+		return make_k_graph(argc,argv);
 	}
 	else {
 		usage();

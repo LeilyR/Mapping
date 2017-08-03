@@ -83,7 +83,7 @@ class test_reveal{
 		test_reveal(){};
 		~test_reveal(){};
 		void read_gfa(std::ifstream & gfa);
-		void read_the_result(std::ifstream &);
+		void read_the_result(std::ifstream &, std::map<std::string, std::pair<size_t, size_t> > & contigs);
 		void compare_with_reveal();
 		void compare_with_path(std::ifstream &);//TOO specific!!
 		const std::map<size_t, std::pair<size_t,size_t> > get_ref_graph_nodes()const{
