@@ -15,7 +15,7 @@ class map_check{
 	~map_check(){}
 	void read_graph_maf(std::ifstream & graph_maf);
 	void read_alignments(std::ifstream & alignments);//Read all the intial created alignments before mapping any read against a graph
-	void check_output(std::ifstream & mapping_maf,const std::string & seqname);
+	void check_output(std::ifstream & mapping_maf,std::string & seqname);
 	void check_an_alignment(unsigned int & ref1, const std::string & seqname, size_t & left2 , size_t & right2);
 	void read_txt_file_long_center(std::ifstream & , std::string & );
 	void read_txt_file(std::ifstream & , std::string &);
@@ -52,6 +52,7 @@ class map_check{
 	std::multimap<std::string , std::pair<size_t, size_t> > test_boundries;
 	std::multimap<std::string , std::pair<unsigned int ,unsigned int> > nodes;
 	std::map<int,std::pair<int, int> > non_aligned; //cluster id, pair(position, length)
+
 	std::map<unsigned int, unsigned int> node_length;
 	std::multimap<size_t , const pw_alignment> al_from_graph;
 	size_t error_counter;

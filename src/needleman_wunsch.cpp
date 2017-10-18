@@ -290,7 +290,7 @@
 				min = i;
 			}
 		}
-	//	std::cout << "min is "<<min <<std::endl;
+	//	std::cout << "min is "<<min << " row "<< row << " column " << column <<std::endl;
 		score_matrix.at(row).at(column)=score_min;
 		mod_matrix.at(row).at(column) = mod.at(min);
 		context_matrix.at(row).at(column) = context.at(min);
@@ -446,8 +446,9 @@
 	template<typename T>
 	void needleman<T>::find_the_best_path(size_t & type, std::string & from_read , std::string & from_ref){
 		std::vector<std::vector<double> > copy_score = score_matrix;
-		std::cout << "read length "<< read.length() << " ref length "<< ref.length() << std::endl;
+		std::cout << "read length "<< read.length() << " ref length "<< ref.length() << " type "<< type << std::endl;
 		size_t row,column;
+		//At type 2 both sides of reads are fixed but only one side of the ref is fixed.
 		if(type == 1 || type == 2 || type == 5){//when both start and end or only the end is fixed. We need to start from the last cell in the matrix.
 			row = read.length();
 			column = ref.length();

@@ -8,7 +8,7 @@
 #define MAX_ENCODING_WIDTH_BITS 20
 #define NUM_ENCODING_TYPES 40 // (max - min + 1)*2, 40 types encoded 0 to 39, 40 is used as flag for no model
 #define MAX_SEQUENCE_MARKOV_CHAIN_LEVEL 5
-#define MAX_ALIGNMENT_MARKOV_CHAIN_LEVEL 2 // context is two modification instructions + current base on known strand
+#define MAX_ALIGNMENT_MARKOV_CHAIN_LEVEL 2 // context is: two modification instructions + current base on known strand
 #define TOTAL_FOR_ENCODING 16384 //2^14 
 #define ENCODING_MIN_WIDTH 3 // min difference between low and high value for arithmetic encoding
 #define NUM_DELETE_DYN 6 // number of delete encodings, 2^0, ... , 2^4, 2^5

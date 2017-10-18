@@ -712,6 +712,7 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 	size_t skip_alt = 0;
 	size_t skip_reverse = 0;
 	std::set<pw_alignment, compare_pw_alignment> setOfAls;
+	size_t accu = 0;
 	if(mafin) {
 		std::cout << " loading 1000 alignments per dot: ";
 		
@@ -744,6 +745,7 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 					name_split(parts.at(1), acc1, name1);
 					size_t start1 = atoi(parts.at(2).c_str());
 					size_t size1 = atoi(parts.at(3).c_str());
+					accu += size1;
 					char strand1 = parts.at(4).at(0);
 					size_t seqlength1 = atoi(parts.at(5).c_str());
 					std::string al1 = parts.at(6);
@@ -873,6 +875,7 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 		}
 		mafin.close();
 		std::cout << std::endl;
+		std::cout << "ACCU "<< accu <<std::endl;
 		if(dnastring::found_iupac_ambiguity) {
 			std::cerr << "Warning: IUPAC DNA ambiguity characters were replaced by N" << std::endl;
 		}
@@ -946,8 +949,8 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 */
 	
 	} else {
-		std::cerr << "Error: cannot read: " << maf_all_alignments << std::endl;
-		exit(1);
+	//	std::cerr << "Error: cannot read: " << maf_all_alignments << std::endl;
+	//	exit(1);
 	}
 	std::cout << "set of als size is "<< setOfAls.size()<<std::endl;
 //	std::vector<pw_alignment> intermediate;//TODO add it as a condition at the beginning when you skip
@@ -963,7 +966,7 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 //	alignments = intermediate;
 	std::cout << alignments.size() <<std::endl;
 }
-void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences, std::string maf_all_alignments) {
+void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences, std::string maf_all_alignments) { //TODO check it! can get faster!
 	std::ifstream fastain(fasta_all_sequences.c_str());
 	if(fastain) {
 		std::string str;
@@ -997,6 +1000,7 @@ void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences,
 				// read next header
 				std::string fhead = str.substr(1);
 				name_split(fhead, curacc, curname);
+			//	std::cout << "curname "<< curname <<std::endl;
 			} else {
 				curseq << str;
 				//if(stoi(curname) == 24 && curacc == "graph5"){
@@ -1035,7 +1039,7 @@ void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences,
 //	}
 
 
-
+	size_t counter = 0;
 	std::ifstream mafin(maf_all_alignments.c_str());
 	size_t skip_self = 0;
 	size_t skip_alt = 0;
@@ -1046,6 +1050,7 @@ void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences,
 		while(getline(mafin, str)) {
 			if(str.at(0)!='#') { // skip headers
 				if(str.at(0)=='a') { // next alignment
+					counter ++;
 					std::string aline1;
 					std::string aline2;
 					getline(mafin, aline1);
@@ -1215,11 +1220,11 @@ void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences,
 			}
 		}
 		mafin.close();
-
+		
 		if(dnastring::found_iupac_ambiguity) {
 			std::cerr << "Warning: IUPAC DNA ambiguity characters were replaced by N" << std::endl;
 		}
-
+		std::cout << "number of raw al " << counter << "set of al size "<< setOfAls.size() << std::endl;
 		std::cout << "Loaded: " << sequences.size() << " sequences and " << alignments.size() << " pairwise alignments " << std::endl;
 		std::cout << skip_self << " self alignments were skipped" << std::endl;
 		std::cout << skip_alt << " alternative alignments of identical regions were skipped" << std::endl;
@@ -1247,6 +1252,10 @@ void all_data::read_fasta_maf_forward_read_only(std::string fasta_all_sequences,
 
 void all_data::read_fasta(std::string fasta_reads){ //Read a fasta file inlcudes sequence reads
 	std::ifstream fastain(fasta_reads.c_str());
+//	std::set<size_t> read_length;
+//	size_t accu =0;
+//	size_t av_accu = 0;
+//	size_t NUMBER = 0;
 	if(fastain) {
 		std::string str;
 		std::stringstream curseq;
@@ -1254,6 +1263,10 @@ void all_data::read_fasta(std::string fasta_reads){ //Read a fasta file inlcudes
 		std::cout<<"check point "<<std::endl;
 		while(getline(fastain, str)) {
 			if(str.at(0)=='>') {
+			//	NUMBER++;
+			//	read_length.insert(accu);
+			//	av_accu += accu;
+			//	accu = 0;
 				if(curseq.str().size()!=0){
 					insert_read(curseq.str());
 					number++;
@@ -1263,6 +1276,7 @@ void all_data::read_fasta(std::string fasta_reads){ //Read a fasta file inlcudes
 				}
 			} else {
 				curseq << str;
+			//	accu+=str.length();
 			}
 		}
 		// store last reas
@@ -1277,6 +1291,12 @@ void all_data::read_fasta(std::string fasta_reads){ //Read a fasta file inlcudes
 		std::cerr << "Error: cannot read: " << fasta_reads << std::endl;
 		exit(1);
 	}
+/*	for(std::set<size_t>::iterator it = read_length.begin() ; it != read_length.end() ; it++){
+		std::cout << *it << std::endl;
+		accu +=*it;
+	}
+	std::cout << "average: " << av_accu/NUMBER<<std::endl;*/
+
 }
 all_data::~all_data() {
 
@@ -1383,6 +1403,7 @@ const located_alignment & all_data::getLAlignment(size_t index) const {
 		std::stringstream longname;
 		longname << acc << ":" << seq_name;
 		longname2seqidx.insert(std::make_pair(longname.str(), seq_id));
+	//	std::cout << "long name "<< longname.str() <<std::endl;
 	}
 	void all_data::insert_read(const std::string & read){
 		reads.push_back(read);

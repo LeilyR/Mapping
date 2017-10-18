@@ -83,23 +83,33 @@ void map_check::read_graph_maf(std::ifstream & graph_maf){
 					std::vector<std::string>acc_parts;
 					strsep(parts.at(1),":", acc_parts);
 					std::stringstream curseq;
-					if(id == 24 && acc_parts.at(0)=="nc000913.3"){
+				/*	if(id == 24 && acc_parts.at(0)=="nc000913.3"){
 						std::ofstream out("maftest");
 						for(size_t i = 0; i< ref2.length(); i++){
 							if(ref2.at(i) != '-'){
 								out<<ref2.at(i);
 							}
 						}
-					}
-					if(acc_parts.at(0)=="nc000913.3"){
+					}*/ 
+				//	if(acc_parts.at(0)=="AWRI1631"){ //XXX For 4yeast
+					if(acc_parts.at(0)=="nc000913.3"){ //XXX For ecoli
 						std::cout << "ref1 length " << ref1.length() << " ref2 length "<< ref2.length() <<std::endl;
-						pw_alignment p(ref1, ref2, begin1, begin2, end1, end2, id, 0);
+					/*	std::vector<std::string> contig_parts; //XXX for yeast
+						strsep(parts.at(1), "|", contig_parts);
+						int contig_id = std::stoi(contig_parts.at(1));*/
+						pw_alignment p(ref1, ref2, begin1, begin2, end1, end2, id, 0); //XXX ecoli case(cases with one seq only)
+
+					//	pw_alignment p(ref1, ref2, begin1, begin2, end1, end2, id, contig_id); //XXX yeast
+						p.print();
 						al_from_graph.insert(std::make_pair(id,p));
 		
 					}
 	
 					//add them to the cluster container as name:clusternumber
-					curseq<<acc_parts.at(0)<<":"<<id;
+				//	std::vector<std::string>acc_parts1; //XXX yeast4
+				//	strsep(parts.at(1),"|", acc_parts1); //XXX yeast4
+					curseq<<acc_parts.at(0)<<":"<<id; //XXX ecoli
+				//	curseq<<acc_parts1.at(1)<<":"<<id; //XXX yeast4
 					std::cout <<curseq.str()<<std::endl;
 					std::map<unsigned int, std::vector<std::string> >::iterator it = clusters.find(id);
 					assert(it != clusters.end());
@@ -114,7 +124,7 @@ void map_check::read_graph_maf(std::ifstream & graph_maf){
 					std::stringstream thisseq;
 					thisseq<<acc_parts.at(0);
 					test_boundries.insert(std::make_pair(thisseq.str(),std::make_pair(start,end)));
-					std::cout<< start << " " << end << std::endl;
+					std::cout<< "boundries " << curseq.str() << " s "<< start << " e " << end << std::endl;
 					getline(graph_maf, str);
 					if(str.length()==0){
 						break;
@@ -134,7 +144,7 @@ void map_check::read_graph_maf(std::ifstream & graph_maf){
 }
 void map_check::read_alignments(std::ifstream & alignments){
 	std::string str;
-	while(getline(alignments, str)) {
+	while(getline(alignments, str)){
 		if(str.at(0)!='#') { // skip headers
 			if(str.at(0)=='a') { // next alignment 
 				std::cout << str <<std::endl;
@@ -174,7 +184,7 @@ void map_check::read_alignments(std::ifstream & alignments){
 	}
 	std::cout << "done! "	<<std::endl;
 }
-void map_check::check_output(std::ifstream & mapping_maf,const std::string & seqname){
+void map_check::check_output(std::ifstream & mapping_maf,std::string & seqname){
 	std::cout << "checking here! "<<std::endl;
 	std::map<std::string,std::set<std::pair<size_t,size_t> > > sorted;
 	sorted.insert(std::make_pair(seqname,std::set<std::pair<size_t,size_t> >()));
@@ -195,7 +205,8 @@ void map_check::check_output(std::ifstream & mapping_maf,const std::string & seq
 	}
 	unsigned int refid;
 	unsigned int readid = 0;
-	size_t accu_length = 0;
+	size_t accu_length = 0; 
+	std::string previous_seq;
 	size_t count = 0;
 	if(mapping_maf) {
 		std::string str;
@@ -222,21 +233,34 @@ void map_check::check_output(std::ifstream & mapping_maf,const std::string & seq
 					std::vector<std::string>read_parts;
 					strsep(parts2.at(1),":", read_parts);
 					std::string read_id = read_parts.at(1).c_str();
+				//	std::vector<std::string>read_name_parts; //XXX 4yeast
+				//	strsep(read_id,"|", read_name_parts); //XXX 4yeast
+				//	readid = std::stoi(read_name_parts.at(0)); //XXX 4yeast
 					std::cout << "read is "<< read_id << " its id is " << readid <<std::endl;
 
 					size_t start = atoi(parts2.at(2).c_str());
 					size_t length = atoi(parts2.at(3).c_str());
-					accu_length += length;
 					std::cout<<"length "<< length << " accu length "<< accu_length <<std::endl;
 
 					size_t end = length+start-1;//TODO consider only gap als!
 					std::cout << "from " << start << " to "<< end <<std::endl;
 					size_t startonseq;
 					size_t endonseq;
+				/*	std::stringstream temp;//XXX yeast
+					temp << read_name_parts.at(1)<<":" << refid; //XXX yeast
+					seqname = temp.str(); //XXX yeast
+					if(read_name_parts.at(1) != previous_seq){
+						accu_length = 0;
+					}
+					previous_seq = read_name_parts.at(1);
+					startonseq = accu_length; //XXX 4yeast
+					accu_length += length; //XXX 4yeast
+					endonseq =  accu_length-1; //XXX 4yeast */
 					if(readid>=1){
 						startonseq = (readid*30030)+start;
 						endonseq = length+startonseq-1;
 					}else{
+						assert(readid == 0);
 						startonseq = start;
 						endonseq = end;
 					}
@@ -267,8 +291,10 @@ void map_check::check_an_alignment(unsigned int & ref1, const std::string & seqn
 		str<< seqname<<":"<<ref1;
 		std::cout << str.str()<<std::endl;
 		std::multimap<std::string , std::pair<size_t, size_t> >::const_iterator find_seq = boundries.find(str.str());
+	//	std::multimap<std::string , std::pair<size_t, size_t> >::const_iterator find_seq = boundries.find(seqname); //XXX yeast4
 	//	assert(find_seq != boundries.end());
 		std::pair<std::multimap<std::string , std::pair<size_t, size_t> >::const_iterator, std::multimap<std::string , std::pair<size_t, size_t> >::const_iterator> it1=boundries.equal_range(str.str());
+	//	std::pair<std::multimap<std::string , std::pair<size_t, size_t> >::const_iterator, std::multimap<std::string , std::pair<size_t, size_t> >::const_iterator> it1=boundries.equal_range(seqname); //XXX yeast4
 		bool mapped = false;
 		for(std::multimap<std::string , std::pair<size_t, size_t> >::const_iterator intervals= it1.first ; intervals!=it1.second; intervals++){
 			std::cout<<"here! " << intervals->first <<std::endl;
@@ -360,11 +386,17 @@ void map_check::read_txt_file(std::ifstream & txtfile, std::string & sequence_of
 		assert(parts.size()==4);
 		std::vector<std::string>seq;
 		strsep(parts.at(1),"|", seq);
-		assert(seq.size()==4);
-		if(seq.at(3)=="NC_000913.3"){
+	//	assert(seq.size()==4);
+	//	std::string substr = seq.at(3).substr(0,4); //XXX For 4yeast
+	//	if(substr == "ABSV"){ //XXX For 4yeast
+		if(seq.size()==4 && seq.at(3)=="NC_000913.3"){
 			std::cout << parts.at(2) << " " << parts.at(3)<<std::endl;
 			int length = std::stoi(parts.at(3)); //TODO change them to size_t
-			non_aligned.insert(std::make_pair(std::stoi(parts.at(0)), std::make_pair(std::stoi(parts.at(2)),length)));
+			assert(length > 0);
+		//	std::stringstream longname;
+		//	longname << parts.at(0)<< ":"<< seq.at(1);
+			non_aligned.insert(std::make_pair(std::stoi(parts.at(0)), std::make_pair(std::stoi(parts.at(2)),length))); 
+		//	non_aligned.insert(std::make_pair(longname.str(), std::make_pair(std::stoi(parts.at(2)),length)));
 		}
 		getline(txtfile, str);
 	}
@@ -385,6 +417,7 @@ const unsigned int map_check::get_node_length(unsigned int & node)const{
 	return it->second;
 
 }
+////////////////////////////////////
 void test_sim_reads_mapping::read_sim_maffile(std::ifstream & sim_maffile, std::map<std::string , std::pair<size_t , size_t> > & onreads){//Read the maf file from simpb software
 	size_t count = 0;
 	size_t read_id = 1;
@@ -444,6 +477,7 @@ void test_sim_reads_mapping::read_sim_maffile(std::ifstream & sim_maffile, std::
 				ref_end = begin1;
 			}
 			pw_alignment p(str1,str2,ref_begin, read_begin, ref_end, read_end, 0, count);
+			p.print();
 			alignments.insert(std::make_pair(count,p));
 			
 			onreads.insert(std::make_pair(nogap, std::make_pair(ref_begin,ref_end)));
@@ -846,7 +880,9 @@ void test_reveal::read_gfa(std::ifstream & gfa){
 			std::vector<std::string> ref_parts;
 			strsep(parts.at(4),":",ref_parts);
 			to = from + parts.at(2).length()-1;
-			if(ref_parts.at(2).at(0)=='1'){ //XXX Specific!
+			std::cout << ref_parts.at(2)<<std::endl;
+		//	if(ref_parts.at(2).at(0)=='0'){ //XXX Specific! ecoli
+			if(ref_parts.at(2).at(0)=='1'){ //XXX For A.thaliana
 				std::cout << "id " << id <<std::endl;
 				ref_graph_nodes.insert(std::make_pair(id,std::make_pair(from,to)));
 				from = to + 1;
@@ -895,12 +931,12 @@ void test_reveal::read_the_result(std::ifstream & mapping_maf , std::map<std::st
 					assert(parts2.size()==7); 
 					std::vector<std::string> readname_parts;
 					strsep(parts2.at(1),":",readname_parts);
-				//XXX ecoli	std::string sub = readname_parts.at(1).substr(4);
+				//	std::string sub = readname_parts.at(1).substr(4); //XXX ecoli
 					std::string sub = readname_parts.at(1); //XXX Yeast
-				//XXX yeast	std::vector<std::string> pos_parts;
-				//XXX yeast	strsep(sub,"|",pos_parts); //XXX Yeast
-					std::stringstream sstream3(sub);
-				//XXX yeast	std::stringstream sstream3(pos_parts.at(0)); //XXX Yeast
+					std::vector<std::string> pos_parts;
+					strsep(sub,"|",pos_parts); //XXX Yeast
+				//	std::stringstream sstream3(sub); //XXX ecoli
+					std::stringstream sstream3(pos_parts.at(0)); //XXX Yeast
 					size_t read_id;
 					sstream3 >> read_id;
 					std::cout << "read id " << read_id << std::endl;
@@ -912,11 +948,11 @@ void test_reveal::read_the_result(std::ifstream & mapping_maf , std::map<std::st
 					size_t al_length;
 					sstream2 >> al_length;
 					std::cout << "al length " << al_length <<std::endl;
-				//XXX ecoli	size_t from = read_id*30030 + read_pos;
-				//XXX ecoli	size_t to = read_id*30030 + read_pos + al_length-1;
-					size_t from = read_id*15000 + read_pos;
-					size_t to = read_id*15000 + read_pos + al_length-1;
-
+				//	size_t from = read_id*30030 + read_pos;
+				 //	size_t to = read_id*30030 + read_pos + al_length-1;
+					size_t from = read_id*15000 + read_pos; //XXX Yeast
+				 	size_t to = read_id*15000 + read_pos + al_length-1; //XXX Yeast
+ 
 				/*XXX yeast	size_t to_on_read = read_pos + al_length-1;
 					std::stringstream sstreamfrom(pos_parts.at(2)); //XXX Yeast
 					size_t from_on_contig; //Yeast

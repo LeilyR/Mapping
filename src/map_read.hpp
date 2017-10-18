@@ -7,6 +7,8 @@
 #include "needleman_wunsch.hpp"
 #include "simple_NW_algo.hpp"
 #include "dijkstra.hpp"
+#include "fibonacci_heap.hpp"
+#include "fibonacci.hpp"
 
 #include <time.h>
 #include <stdio.h>
@@ -170,6 +172,10 @@ class als_components{
 	void add_to_maf(const pw_alignment & al, std::ofstream & output, bool & firstal);
 	const pw_alignment & get_alignment(size_t & , size_t &)const;
 	void make_components(size_t & comp, std::vector<std::map<std::pair<size_t,size_t>,double> > & components, std::vector<std::set<size_t> > & comp_nodes, bool & FULLCOMP, size_t & no_comp); //XXX Just started thinking of spliting alignment graph into several components andfind the shortest path on each of these components
+	void find_shortest_path_to_each_successors(size_t & comp, const pw_alignment & current_al ,std::set<int>& nodes, std::multiset<pw_alignment,sort_pw_alignment_by_left> & neighbors,size_t & refacc, size_t & readacc);
+	void heap_dijkstra(DotFibonacciHeap & myHeap, const pw_alignment& current, const pw_alignment& neighbor, std::map<int, int> & cur_pre, int & cur_name, int & next_name, size_t & to_on_read, size_t & refacc, size_t & readacc, std::map<int,const pw_alignment> & als_on_nodes);
+	void run_nw_algorithm(DotFibonacciHeap & myHeap, unsigned int read_id, int & startnode, const pw_alignment& neighbor, int & node_name, std::set<int> & seen , std::set<int> & frontier,size_t & refacc, size_t & readacc, size_t & from_on_read, size_t & to_on_read, bool LASTNODE,size_t & ref_from, size_t & ref_to, std::set<int> & nodes_on_paths, std::map<int, double> & distance, std::map<double,std::vector<int> > & distance_node, double & parent_dist,std::map<int, int> & cur_pre, std::map<int,const pw_alignment> & als_on_nodes);
+	void get_single_shortest_path(size_t & comp, std::map<int,int> & cur_pre , int & lastnode, int & firstnode, size_t & readacc, size_t & refacc,std::map<int, const pw_alignment> & als_on_nodes);
 	private:
 		const all_data & data;
 	//	deep_first & dfirst;
@@ -184,11 +190,12 @@ class als_components{
 	//	std::vector<std::set<const pw_alignment*> >add_to_end;
 		std::vector<std::vector<size_t> > shortest_path;
 		std::vector< std::map<size_t , std::set<size_t> > >adjacencies; //from_al index , to_al index , vector goes over different components (Includes alignment graph)
-		std::vector<std::map<const pw_alignment, size_t, compare_pw_alignment> >node_indices;//al and its index
+		std::vector<std::map<pw_alignment, size_t, compare_pw_alignment> >node_indices;//al and its index
 		std::vector<std::map<std::pair<size_t,size_t>,double> >weight_of_edges; //Edges and their weight. In the case of exisitng adjacencies, weight is always the modification of the end node of an edge 
 		std::vector<std::map<size_t, const pw_alignment> >indices_nodes;
 	//	std::map<std::vector<int> , size_t > alignments_on_each_ref_node; //keeps the index of each alignment is created on each node of the reference graph. int-->index from ref graph , size_t al_indices
 		std::map<int , std::set<size_t> > alignments_on_each_ref_node;
+	//	std::map<int,const pw_alignment> als_on_nodes;
 		size_t index;
 		size_t previous_right2;
 		size_t previous_right1;

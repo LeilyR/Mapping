@@ -10,6 +10,7 @@ void als_components<T>::find_als_on_paths(std::ofstream & output,size_t & refacc
 //	shortest_path.resize(alignments.size());//Shortest path is found for each component
 	for(size_t i =0; i < alignments.size(); i++){//Over components of alignments between one specific read and the reference graph
 		std::cout << "all als at comp "<< i << " are " << alignments.at(i).size() << std::endl;
+	//	if(i == 20) exit(1);
 		size_t first_left;
 		std::multiset<pw_alignment,sort_pw_alignment_by_right>::reverse_iterator revit = ordered_als_by_right.at(i).rbegin(); //finds the last alignment of the component
 		pw_alignment last_p = *revit;
@@ -42,10 +43,11 @@ void als_components<T>::find_als_on_paths(std::ofstream & output,size_t & refacc
 			//XXX	std::map< int, std::set<std::pair<std::vector<int>,size_t> > >paths_length= rgraph.get_parent_length();
 			//XXX	if(paths_length.size()>1){
 				if(nodes.size()!=0){
-				//	look_for_successors_on_paths(i, p, nodes, successors); //TODO
+				//	look_for_successors_on_paths(i, p, nodes, successors); //Checks all the possible paths, not only the best one
 				//	finding_successors_on_subref(i, p, nodes, successors);
-					finding_successors_on_subref(i, p, nodes, successors,refacc,readacc);
-				}
+				//	finding_successors_on_subref(i, p, nodes, successors,refacc,readacc); //XXX This is the correct one without Fibonacci heap!
+					find_shortest_path_to_each_successors(i, p, nodes, successors, refacc, readacc); //XXX Here i try to use dijkstra with fibonacci heap and only get the best path to each successor alignment
+				}//TODO else?
 			}
 			std::cout << "find first and last als"<<std::endl;
 			size_t successors_size = successors.size();
@@ -98,7 +100,7 @@ void als_components<T>::find_als_on_paths(std::ofstream & output,size_t & refacc
 			}
 			std::cout << " "<<std::endl;
 		}*/
-		for(std::map<const pw_alignment, size_t , compare_pw_alignment>::iterator it = node_indices.at(i).begin(); it != node_indices.at(i).end();it++){
+		for(std::map<pw_alignment, size_t , compare_pw_alignment>::iterator it = node_indices.at(i).begin(); it != node_indices.at(i).end();it++){
 			std::cout<< it->second << " : " <<std::endl;
 			it->first.print();
 		}
@@ -219,7 +221,7 @@ void als_components<T>::finding_successors_on_subref(size_t & comp, const pw_ali
 	std::cout << "to "<< to << " from "<< from << " seqlength "<< seqlength << std::endl;
 	size_t current_remainder = to-from +1;
 	std::cout << "current remainder is "<< to-from+1 << std::endl;
-	std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(current_al);
+	std::map<pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(current_al);
 	if(id == node_indices.at(comp).end()){
 		node_indices.at(comp).insert(std::make_pair(current_al,index));
 		indices_nodes.at(comp).insert(std::make_pair(index,current_al));
@@ -349,7 +351,7 @@ void als_components<T>::finding_successors_on_subref(size_t & comp, const pw_ali
 					this_al = nwal;					
 				}
 				add_adjacencies(comp, current_al , this_al , refacc, readacc);
-				std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator it = node_indices.at(comp).find(this_al);
+				std::map<pw_alignment, size_t, compare_pw_alignment>::iterator it = node_indices.at(comp).find(this_al);
 				assert(it != node_indices.at(comp).end());
 				cur_index = it->second;
 				if(to_on_read == nex_l2-1){
@@ -366,8 +368,8 @@ void als_components<T>::finding_successors_on_subref(size_t & comp, const pw_ali
 			if(nodes_on_paths.size() != 0){
 		//	if(nodes.size() != 0){
 		//	if(path_length.size() != 0){
-				find_best_path_to_neighbour(comp,nex_name,current_name, cur_index , this_al,nex_al,last_pos_on_read, last_pos_on_ref,refacc ,readacc, nodes_on_paths,seen_path,seen_indices,weight, cur_pre); //XXX old one, working on ecoli
-			//	find_best_path_to_neighbour(comp, from_on_read, last_pos_on_read, last_pos_on_ref, new_weight, seen_edges, cur_pre, cur_index, this_al, nex_al, nex_name, current_name, refacc, readacc,visited);
+				find_best_path_to_neighbour(comp,nex_name,current_name, cur_index , this_al,nex_al,last_pos_on_read, last_pos_on_ref,refacc ,readacc, nodes_on_paths,seen_path,seen_indices,weight, cur_pre);
+		//		find_best_path_to_neighbour(comp, from_on_read, last_pos_on_read, last_pos_on_ref, new_weight, seen_edges, cur_pre, cur_index, this_al, nex_al, nex_name, current_name, refacc, readacc,visited);
 			}
 		}
 		if(it1 != nodes.end() && nex_name == current_name && cur_r1<nex_l1 && nex_l1-cur_r1<=MAXGAP & nex_name > 0){
@@ -534,7 +536,7 @@ void als_components<T>::find_best_path_to_neighbour(size_t & comp, size_t & from
 					id->second.print();
 					add_adjacencies(comp, cural , nwal , refacc, readacc);//TODO I can do it locally in here, and later on which ever is chosen be added to the alignment graph		
 					nwal.print();
-					std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator nwal_id = node_indices.at(comp).find(nwal);
+					std::map<pw_alignment, size_t, compare_pw_alignment>::iterator nwal_id = node_indices.at(comp).find(nwal);
 					assert(nwal_id != node_indices.at(comp).end());
 					std::cout << "start al " << startal<< " " << nwal_id->second<<std::endl;
 					std::map<std::pair<size_t,size_t>, double>::iterator wei = weight.find(std::make_pair(startal,nwal_id->second));
@@ -601,7 +603,7 @@ void als_components<T>::make_last_als_on_a_path(size_t & comp, unsigned int & re
 			std::string str_ref(readin.length(),'-');
 			pw_alignment p1(str_ref,readin,0,from_on_read,0,to_on_read,temp,ref2);
 			add_adjacencies(comp, cur_al, p1,refacc,readacc);
-			std::map<const pw_alignment,size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(p1);
+			std::map<pw_alignment,size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(p1);
 			assert(it != node_indices.at(comp).end());
 			cur_pre.insert(std::make_pair(it->second, startal));
 			model.cost_function(p1, m1, m2, refacc,readacc);
@@ -639,7 +641,7 @@ void als_components<T>::make_last_als_on_a_path(size_t & comp, unsigned int & re
 			pw_alignment nwal(refout,readout,ref_from,from_on_read,ref_to,this_to_on_read,ref_id,read_id);
 			std::cout << "next al is last al!"<<std::endl;
 			add_adjacencies(comp, cur_al, nwal,refacc,readacc);
-			std::map<const pw_alignment,size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(nwal);
+			std::map<pw_alignment,size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(nwal);
 			assert(it != node_indices.at(comp).end());
 			cur_pre.insert(std::make_pair(it->second, startal));
 			model.cost_function(nwal, m1, m2, refacc,readacc);
@@ -658,7 +660,7 @@ void als_components<T>::make_last_als_on_a_path(size_t & comp, unsigned int & re
 		}
 		//Add the last on to the seen , cur_pre, weight
 		add_adjacencies(comp, cural , last_al , refacc, readacc);
-		std::map<const pw_alignment,size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(last_al);
+		std::map<pw_alignment,size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(last_al);
 		assert(it != node_indices.at(comp).end());
 		cur_pre.insert(std::make_pair(it->second, startal));
 		std::cout<< "first-last " << startal << " " <<it->second<< std::endl;
@@ -683,16 +685,18 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 	size_t pre_from_on_read = data.getSequence(read_id).length();
 	std::set<int> visited; //For loops, may delete it later if seen_als handels all the situations
 	//Create the first al from the remaining part of the current node!
-
+	int size_of_nodes = nodes_on_paths.size();
+//	FHeap myheap(size_of_nodes);
+//	myheap.insert(startnode,0);
 	while(startnode!=next_name){
 		std::cout << "start node "<< startnode <<std::endl;
 		std::cout << "al distance size "<< al_distance.size()<<std::endl;
 		std::set<int> adjs = rgraph.get_adjacencies(startnode); 
 		assert(adjs.size() != 0); //XXX if we dynamically erase the path then it should be removed!
-		std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(this_al);
+		std::map<pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(this_al);
 		assert(id != node_indices.at(comp).end());
 		std::set<size_t>::iterator find_seens = seen_als.find(id->second);
-		if(find_seens==seen_als.end()){
+		if(find_seens==seen_als.end()){//To not let the same node gets visited more than once
 			seen_als.insert(id->second);
 			std::map<size_t , double>::iterator pre_wei = weight.find(id->second);
 			assert(pre_wei != weight.end());
@@ -721,7 +725,7 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 		}
 		if(END_REACHED == false){*/
 			for(std::set<int>::iterator it = adjs.begin() ; it != adjs.end() ; it++){ //TODO if *it == next_name
-				std::cout << "this adj " << *it <<std::endl;
+				std::cout << "this adj " << *it <<std::endl; //TODO if we delete al_distance at the end of each round this is wrong , it might need to change to visited edges instead!
 				std::set<int>::iterator vis = visited.find(*it);
 				if(vis != visited.end()){//Is used for handeling loops
 					std::cout << "visited! "<<std::endl;
@@ -757,13 +761,14 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 						}
 						std::cout << "has been seen " << startnode << " to " << *it <<std::endl;
 						std::map<std::pair<int, int> , std::pair<size_t, double> >::iterator seen_weight = seen_indices.find(seen->first);
-						if(seen_weight == seen_indices.end()){
+						if(seen_weight == seen_indices.end()){//XXX ??? how is this possible??
 							std::cout << "is not seen "<< seen->first.first << " " << seen->first.second << std::endl;
 						//	continue;
 							DIFFERENT_POS = true; //TODO It is wrong!! results in making more than one al for a single position on a read. and the old one is replaced by the new one
 						}else{
 							assert(seen_weight != seen_indices.end());
 							al_distance.insert(std::make_pair(seen_weight->second.second,seen_weight->second.first)); //if equal to end!
+						//	myheap.insert(this_name,seen_weight->second.second);
 							cur_pre.insert(std::make_pair(seen_weight->second.first,id->second));
 						}
 				//	weight.insert(std::make_pair(seen_weight->second.second,seen_weight->second.first));
@@ -792,6 +797,7 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 					unsigned int ref_id;
 				//	assert(this_name != next_name);
 					if(this_name > 0){
+						std::cout << "HERE! "<< std::endl;
 						ref_id = rgraph.get_refid(refacc,this_name);
 						if(this_name != next_name){
 							ref_to = data.getSequence(ref_id).length()-1;
@@ -861,6 +867,7 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 							visited.insert(*it);
 						}
 					}
+					std::cout << "ref out " << refout << " read out " << readout <<std::endl;
 					pw_alignment nwal(refout,readout,ref_from,from_on_read,ref_to,this_to_on_read,ref_id,read_id);
 					nextal = nwal;
 					if(this_name == next_name){
@@ -887,7 +894,10 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 				add_adjacencies(comp, this_al , nextal , refacc, readacc);//TODO I can do it locally in here, and later on which ever is chosen be added to the alignment graph		
 				std::cout << "nextal "<<std::endl;
 				nextal.print();
-				std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator nwal_id = node_indices.at(comp).find(nextal);
+				std::cout << nextal.get_al_ref1() << std::endl;
+				std::cout << nextal.get_al_ref2()<<std::endl;
+
+				std::map<pw_alignment, size_t, compare_pw_alignment>::iterator nwal_id = node_indices.at(comp).find(nextal);
 				assert(nwal_id != node_indices.at(comp).end());
 				std::map<size_t , double>::iterator wei = weight.find(nwal_id->second);
 				if(wei == weight.end()){
@@ -901,6 +911,7 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 					weight.insert(std::make_pair(nwal_id->second,this_weight));
 					cur_pre.insert(std::make_pair(nwal_id->second, id->second));
 					al_distance.insert(std::make_pair(this_weight,nwal_id->second));
+				//	myheap.insert(this_weight,this_name);
 					std::cout << "add to seen indices "<< startnode << " " << *it << " "<< nwal_id->second << " " << this_weight << std::endl;
 					seen_indices.insert(std::make_pair(std::pair<int, int>(startnode,*it) , std::pair<size_t , double>(nwal_id->second,this_weight)));
 				}else{
@@ -908,8 +919,12 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 					std::multimap<double, size_t>::iterator test = al_distance.find(wei->second);
 					if(test == al_distance.end()){
 						al_distance.insert(std::make_pair(wei->second,nwal_id->second));						
-					}else{ //TODO check if the second on is not the the same index and add it!
-
+					}else{ //Check if the second on is not the the same index and add it!
+						//if test->second is not nwal_id->second add it to the  al_distance
+						if(test->second != nwal_id->second){
+							al_distance.insert(std::make_pair(wei->second,nwal_id->second));
+						//	myheap.insert(this_name,wei->second);
+						}
 					}
 					std::map<size_t,size_t>::iterator cur = cur_pre.find(nwal_id->second);
 					if(cur == cur_pre.end()) std::cout << nwal_id->second << std::endl;
@@ -952,6 +967,12 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 		std::cout << "al distance is "<<std::endl;
 		for(std::multimap<double, size_t>::iterator test = al_distance.begin() ; test != al_distance.end(); test++){
 			std::cout << "Weight "<< test->first << " index " << test->second <<std::endl;
+			std::map<size_t, const pw_alignment>::iterator ID = indices_nodes.at(comp).find(test->second);
+			this_al = ID->second;
+			this_al.print();
+			std::cout << this_al.get_al_ref1() << std::endl;
+			std::cout << this_al.get_al_ref2()<<std::endl;
+
 		}
 		std::cout << al_distance.begin()->first << " " << al_distance.begin()->second <<std::endl;
 		assert(al_distance.size()>0);
@@ -960,6 +981,10 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 		ID->second.print();
 		assert(ID != indices_nodes.at(comp).end());
 		this_al = ID->second;
+		std::cout <<"this al " <<std::endl;
+		this_al.print();
+		std::cout << this_al.get_al_ref1() << std::endl;
+		std::cout << this_al.get_al_ref2()<<std::endl;
 		size_t ind = this_al.getreference1();
 		if(ind != data.numSequences()+1){
 			std::string tempstr = data.get_seq_name(ind);
@@ -994,13 +1019,16 @@ void als_components<T>::find_best_path_to_neighbour(size_t comp, int & next_name
 		}else{
 			startnode = next_name;
 		}
+	//	int test_startnode = myheap.deleteMin();
+	//	assert(test_startnode == startnode);
 		al_distance.erase(al_distance.begin());
+	//	al_distance.clear();
 		pre_from_on_read == from_on_read;
 //	}
 	}
 	//TODO The last al between read and and the remaining of the last node and the last node itself
 	assert(startnode ==next_name);
-	std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(this_al);
+	std::map<pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(this_al);
 	assert(id != node_indices.at(comp).end());
 	std::map<size_t , double>::iterator pre_wei = weight.find(id->second);
 	assert(pre_wei != weight.end());
@@ -1382,17 +1410,17 @@ void als_components<T>::get_subgraph(const pw_alignment & p){//Return a sub grap
 		name = -1*name;
 	}
 	std::cout << "name is " << name <<std::endl;
-	clock_t t1;
-	t1 = clock();
+//	clock_t t1;
+//	t1 = clock();
 //XXX	rgraph.deep_first_search(name, ref_accession,r1);
-	t1 = clock() - t1;
-  	printf ("It took me %d clicks (%f seconds).\n",t1,((float)t1)/CLOCKS_PER_SEC);
+//	t1 = clock() - t1;
+  //	printf ("It took me %d clicks (%f seconds).\n",t1,((float)t1)/CLOCKS_PER_SEC);
 
-	clock_t t;
-	t = clock();
+//	clock_t t;
+//	t = clock();
 	rgraph.bfs(name,ref_accession,r1);
-	t = clock() - t;
-	printf ("It took me %d clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC);
+//	t = clock() - t;
+//	printf ("It took me %d clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC);
 //	clock_t t1;
 //	t1 = clock();
 //	rgraph.make_sub_graph(name,ref_accession,r1);
@@ -1567,10 +1595,11 @@ void als_components<T>::look_for_successors_on_paths(size_t & comp, const pw_ali
 				std::vector<std::vector<int> >all_paths;
 				std::vector<std::vector<std::string> >all_strings_from_ref_graph; //each string is content of a node on a path
 				append_nodes(nodes,name,current_node_name,reference1, ref1, refacc,all_refs,all_paths,all_strings_from_ref_graph);//add all the nodes to a string 
+				std::cout << "size of strings "<< all_strings_from_ref_graph.size() << std::endl;
+
 				assert(all_strings_from_ref_graph.size()==all_paths.size());
 				assert(all_strings_from_ref_graph.size() == all_refs.size());
 				assert(all_strings_from_ref_graph.size() > 0);
-				std::cout << "size of strings "<< all_strings_from_ref_graph.size() << std::endl;
 				for(size_t s = 0; s < all_strings_from_ref_graph.size(); s++){
 					std::cout << all_strings_from_ref_graph.at(s).size()<<std::endl;
 					std::cout<< "this path is "<<std::endl;
@@ -1638,7 +1667,7 @@ void als_components<T>::look_for_successors_on_paths(size_t & comp, const pw_ali
 										alignments_on_each_ref_node.insert(std::make_pair(current_node_name,std::set<size_t>()));
 										it = alignments_on_each_ref_node.find(current_node_name);
 									}
-									std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator it1 = node_indices.at(comp).find(current_al);
+									std::map<pw_alignment, size_t, compare_pw_alignment>::iterator it1 = node_indices.at(comp).find(current_al);
 									if(it1 == node_indices.at(comp).end()){
 										node_indices.at(comp).insert(std::make_pair(current_al,index));
 										indices_nodes.at(comp).insert(std::make_pair(index,current_al));
@@ -1849,9 +1878,9 @@ void als_components<T>::get_previous_als(size_t & comp , int & index, std::vecto
 template<typename T>
 void als_components<T>::add_to_containers(size_t & comp , const pw_alignment & p1 , const pw_alignment & p2 , size_t & ref_acc, size_t & read_acc, int & current_name, int & next_name){
 	add_adjacencies(comp, p1 , p2, ref_acc, read_acc);
-	std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator it1 = node_indices.at(comp).find(p1);
+	std::map<pw_alignment, size_t, compare_pw_alignment>::iterator it1 = node_indices.at(comp).find(p1);
 	assert(it1 != node_indices.at(comp).end());
-	std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator it2 = node_indices.at(comp).find(p2);
+	std::map<pw_alignment, size_t, compare_pw_alignment>::iterator it2 = node_indices.at(comp).find(p2);
 	assert(it2 != node_indices.at(comp).end());
 	std::map<int , std::set<size_t> >::iterator it=alignments_on_each_ref_node.find(current_name);
 	if(it != alignments_on_each_ref_node.end()){
@@ -2661,9 +2690,10 @@ void als_components<T>::looking_for_first_al(size_t & comp, const pw_alignment &
 		//There will no alignment before this node and it is directly connected to the start node
 		//XXX HERE! 
 		std::cout << "seq length 0 "<<std::endl;
-		std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator it=node_indices.at(comp).find(p);
+		std::map<pw_alignment, size_t, compare_pw_alignment>::iterator it=node_indices.at(comp).find(p);
 		p.print();
 		if(it!=node_indices.at(comp).end()){
+			std::cout << "HERE! "<<std::endl;
 			std::map<size_t , std::set<size_t> >::iterator adj = adjacencies.at(comp).find(0);
 			if(adj == adjacencies.at(comp).end()){
 				adjacencies.at(comp).insert(std::make_pair(0, std::set<size_t>()));
@@ -2672,24 +2702,28 @@ void als_components<T>::looking_for_first_al(size_t & comp, const pw_alignment &
 			adj->second.insert(it->second);
 			//adjacencies.at(comp).insert(std::make_pair(0,it->second));
 		}else{
+			std::cout << "index "<< index <<std::endl;
 			node_indices.at(comp).insert(std::make_pair(p,index));
 			indices_nodes.at(comp).insert(std::make_pair(index,p));
-			index++;
-			it=node_indices.at(comp).find(p);
+		//	it=node_indices.at(comp).find(p);
+			std::cout << "add to node 0 "<<std::endl;
 			std::map<size_t , std::set<size_t> >::iterator adj = adjacencies.at(comp).find(0);
 			if(adj == adjacencies.at(comp).end()){
 				adjacencies.at(comp).insert(std::make_pair(0, std::set<size_t>()));
 				adj = adjacencies.at(comp).find(0);
 			}
-			adj->second.insert(it->second);
-			adj = adjacencies.at(comp).find(it->second);
+			adj->second.insert(index);
+			adj = adjacencies.at(comp).find(index);
 			assert(adj == adjacencies.at(comp).end());
-			adjacencies.at(comp).insert(std::make_pair(it->second, std::set<size_t>()));
+			adjacencies.at(comp).insert(std::make_pair(index, std::set<size_t>()));
+			index++;
+
+			it=node_indices.at(comp).find(p);
 
 
 		//	adjacencies.at(comp).insert(std::make_pair(0,it->second));
 		}
-
+		
 		double c1,c2,m1,m2;
 		assert( p.getreference2() != data.numSequences()+2);
 		assert(p.getreference1() != data.numSequences()+1); //XXX ??? cant it happen?? It could i guess!
@@ -2699,6 +2733,7 @@ void als_components<T>::looking_for_first_al(size_t & comp, const pw_alignment &
 		}else if(p.getreference1() == data.numSequences()+1){//m1 is the cost of insertion from ref accession to the read accession 
 			m1 = 2.5 * p.alignment_length();//TODO change to insertion from ref accession to the read accession
 		}
+		std::cout << "add to weight "<<std::endl;
 		weight_of_edges.at(comp).insert(std::make_pair(std::make_pair(0,it->second),m1)); 
 	}
 
@@ -2793,7 +2828,7 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 					if(a_path==seen_path.end()){
 						seen_path.insert(pre_path);
 						std::set<size_t> temp;
-						std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator al_id = node_indices.at(comp).find(current_al);
+						std::map<pw_alignment, size_t, compare_pw_alignment>::iterator al_id = node_indices.at(comp).find(current_al);
 						if(al_id == node_indices.at(comp).end()){
 							node_indices.at(comp).insert(std::make_pair(current_al,index));
 							indices_nodes.at(comp).insert(std::make_pair(index,current_al));
@@ -2847,6 +2882,7 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 						pre_path.push_back(this_p.at(j));
 						seen_path.insert(pre_path);					
 					}
+					std::cout << "p at j-1 "<< this_p.at(j-1)<<std::endl;
 					std::map<int , std::set<size_t> >::iterator pre_al = alignments_on_each_ref_node.find(this_p.at(j-1));
 					if(pre_al != alignments_on_each_ref_node.end()){
 						size_t from = 0;
@@ -2880,6 +2916,8 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 							const pw_alignment p = id->second;
 							std::cout << "pre al "<<std::endl;
 							p.print();
+							std::cout << p.get_al_ref1() << std::endl;
+							std::cout << p.get_al_ref2()<<std::endl;
 							size_t l2,r2;
 							p.get_lr2(l2,r2);
 							if(l2 == ini_read_from) continue;
@@ -2906,6 +2944,24 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 							if(read_counter == 0){
 								read_to = data.getSequence(read_id).length();
 							}
+							if(type == 2){
+								size_t ref_counter = 0;
+								for(size_t i = 0; i < ref_out.size();i++){
+									if(ref_out.at(i)!= '-'){
+										ref_counter ++;
+									}
+								}
+								to = from + ref_counter -1;
+								if(ref_counter == 0){//TODO it can happen only at type two, dunno how to deal with it maybe add it to the previous al.
+									std::cout << "ref length 0! "<<std::endl;
+									assert(type == 2);
+									unsigned int temp = data.numSequences()+1;
+									ref_id = temp;
+									from = 0;
+									to = 0;
+								//	exit(0);
+								}
+							}
 							if(this_p.at(j)>0){ 
 								pw_alignment nw_al(ref_out,read_out,from, read_from ,to, read_to, ref_id, read_id);
 								nw_al.print();
@@ -2914,7 +2970,7 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 									std::cout << "first al is here! "<<std::endl;
 									add_edge_to_begin(comp, nw_al, read_acc, ref_acc);
 								}
-							}else{
+							}else{ 
 								pw_alignment nw_al(ref_out,read_out,to, read_from ,from, read_to, ref_id, read_id);
 								nw_al.print();
 								add_to_containers(comp, nw_al, p , ref_acc, read_acc, this_p.at(j), this_p.at(j-1));
@@ -2946,7 +3002,7 @@ void als_components<T>:: make_last_nw_als(size_t & comp, int& node_name, const p
 	std::map<size_t , double> weight;
 	std::map<size_t,size_t> cur_pre;
 	pw_alignment this_al = current_al;
-	std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(this_al);
+	std::map<pw_alignment, size_t, compare_pw_alignment>::iterator id = node_indices.at(comp).find(this_al);
 	if(id == node_indices.at(comp).end()){
 		node_indices.at(comp).insert(std::make_pair(this_al , index));
 		indices_nodes.at(comp).insert(std::make_pair(index, this_al));
@@ -3063,7 +3119,7 @@ void als_components<T>:: make_last_nw_als(size_t & comp, int& node_name, const p
 			add_adjacencies(comp, this_al , nextal , ref_acc, read_acc);//TODO I can do it locally in here, and later on which ever is chosen be added to the alignment graph		
 			std::cout << "nextal "<<std::endl;
 			nextal.print();
-			std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator nwal_id = node_indices.at(comp).find(nextal);
+			std::map<pw_alignment, size_t, compare_pw_alignment>::iterator nwal_id = node_indices.at(comp).find(nextal);
 			assert(nwal_id != node_indices.at(comp).end());
 			std::map<size_t , double>::iterator wei = weight.find(nwal_id->second);
 			if(wei == weight.end()){
@@ -3464,7 +3520,7 @@ void als_components<T>::looking_for_last_al(size_t & comp, const pw_alignment & 
 	}else{
 		//attach it directly to the end node
 		assert(r2==length-1);
-		std::map<const pw_alignment, size_t, compare_pw_alignment>::iterator it=node_indices.at(comp).find(p);
+		std::map<pw_alignment, size_t, compare_pw_alignment>::iterator it=node_indices.at(comp).find(p);
 		if(it!=node_indices.at(comp).end()){
 			std::map<size_t , std::set<size_t> >::iterator adj = adjacencies.at(comp).find(it->second);
 			if(adj == adjacencies.at(comp).end()){
@@ -3865,12 +3921,14 @@ void als_components<T>::add_adjacencies(size_t & comp, const pw_alignment & p1 ,
 	size_t p1_index;
 	std::map<const pw_alignment,size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(p1);
 	if(it == node_indices.at(comp).end()){
-		std::cout << "here!"<<std::endl;
+		std::cout << "here! " << index <<std::endl;
+
 		node_indices.at(comp).insert(std::make_pair(p1,index));
 		indices_nodes.at(comp).insert(std::make_pair(index,p1));
-		index++;
 		it=node_indices.at(comp).find(p1);
+		index++;
 	}
+	std::cout << "calculate m"<<std::endl;
 	double c1,c2,m1,m2;
 //	if(p2.getreference1() != data.numSequences()+1 && p2.getreference2() != data.numSequences()+2 && p2.getbegin2()!=p2.getend2() && p2.getbegin1() != p2.getbegin1()){
 //		model.cost_function(p2,c1,c2,m1,m2);
@@ -3884,23 +3942,19 @@ void als_components<T>::add_adjacencies(size_t & comp, const pw_alignment & p1 ,
 	std::cout << "m1 "<< m1 << " m2 "<< m2 <<std::endl;
 //		std::cout << "m1 for al of length one "<< m1 <<std::endl;
 //	}
+	assert(it!=node_indices.at(comp).end());
 	p1_index = it->second;
+	std::cout << "p1 index "<< p1_index <<std::endl;
 	size_t seqsize = data.getSequence(p2.getreference2()).length();
-	std::map<const pw_alignment,size_t,compare_pw_alignment>::const_iterator it1=node_indices.at(comp).find(p2);
+	
+	std::map<pw_alignment,size_t,compare_pw_alignment>::const_iterator it1=node_indices.at(comp).find(p2);
 	if((it1 == node_indices.at(comp).end())){//Just removed : ((p2.getbegin2()==p2.getend2())&&(p2.getend2()==seqsize))
 		std::cout << "p1 index "<< p1_index << " p2 index "<<index<<std::endl;
-		if(index == 241 || index == 247){
-			std::cout<< "p2 is "<<std::endl;
-			p2.print();
-			std::cout << p2.get_al_ref1()<<std::endl;
-			std::cout << p2.get_al_ref2() << std::endl;
-		}
+	
 		node_indices.at(comp).insert(std::make_pair(p2,index));
 		indices_nodes.at(comp).insert(std::make_pair(index,p2));
 		size_t p2_index = index;
 		index++;
-		std::set<int> temp;
-		temp.insert(p2_index);
 		std::map<size_t , std::set<size_t> >::iterator it = adjacencies.at(comp).find(p1_index);
 		if(it == adjacencies.at(comp).end()){
 			adjacencies.at(comp).insert(std::make_pair(p1_index, std::set<size_t>()));
@@ -3911,7 +3965,6 @@ void als_components<T>::add_adjacencies(size_t & comp, const pw_alignment & p1 ,
 		if(it == adjacencies.at(comp).end()){
 			adjacencies.at(comp).insert(std::make_pair(p2_index, std::set<size_t>()));
 		}
-	//	adjacencies.at(comp).insert(std::make_pair(p1_index, temp));
 		std::pair<size_t, size_t> this_pair;
 		this_pair = std::make_pair(p1_index,p2_index);
 		std::map<std::pair<size_t,size_t>,double>::iterator weight = weight_of_edges.at(comp).find(this_pair);
@@ -3919,7 +3972,7 @@ void als_components<T>::add_adjacencies(size_t & comp, const pw_alignment & p1 ,
 			weight_of_edges.at(comp).insert(std::make_pair(std::make_pair(p1_index, p2_index),m1));
 		}
 	}else{
-		std::cout<<"else! "<<std::endl;
+	
 		size_t p2_index = it1->second;
 		std::cout << p1_index << " to "<< p2_index<<std::endl;
 		std::map<size_t , std::set<size_t> >::iterator it = adjacencies.at(comp).find(p1_index);
@@ -3949,7 +4002,7 @@ void als_components<T>::add_adjacencies(size_t & comp, const pw_alignment & p1 ,
 }
 template<typename T>
 void als_components<T>::add_edge_to_begin(size_t & comp , const pw_alignment & p, size_t & read_acc, size_t & ref_acc){
-	std::map<const pw_alignment, size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(p);
+	std::map<pw_alignment, size_t,compare_pw_alignment >::const_iterator it=node_indices.at(comp).find(p);
 	assert(it != node_indices.at(comp).end());
 	std::map<size_t , std::set<size_t> >::iterator adj = adjacencies.at(comp).find(0);
 	if(adj == adjacencies.at(comp).end()){
@@ -3972,7 +4025,7 @@ void als_components<T>::add_edge_to_begin(size_t & comp , const pw_alignment & p
 template<typename T>
 void als_components<T>::add_edge_to_end(size_t & comp , const pw_alignment & p){
 	p.print();
-	std::map<const pw_alignment ,size_t,compare_pw_alignment>::const_iterator it=node_indices.at(comp).find(p);
+	std::map<pw_alignment ,size_t,compare_pw_alignment>::const_iterator it=node_indices.at(comp).find(p);
 	if(it == node_indices.at(comp).end()){
 		node_indices.at(comp).insert(std::make_pair(p,index));
 		indices_nodes.at(comp).insert(std::make_pair(index,p));
@@ -4078,6 +4131,10 @@ void als_components<T>::add_to_maf(const pw_alignment & al, std::ofstream & outp
 	//		al.print();
 	//	}
 		std::cout << "in add to maf "<< al.getbegin1() << " "<<al.getend1() << std::endl;
+		al.print();
+		std::cout <<  al.get_al_ref1() <<std::endl;
+		std::cout <<  al.get_al_ref2() <<std::endl;
+
 		assert(al.get_al_ref1().length()!=0 && al.get_al_ref2().length()!=0);
 		output << "a " << std::endl; //TODO Maybe add a score by using the mod cost or gain of the al
 		acc1 = data.accNumber(ref1);
@@ -4247,6 +4304,480 @@ void als_components<T>::filter_als(size_t & comp){
 		}
 	}
 
+
+}
+template<typename T>
+void als_components<T>::find_shortest_path_to_each_successors(size_t & comp, const pw_alignment & current_al ,std::set<int>& nodes, std::multiset<pw_alignment,sort_pw_alignment_by_left> & neighbors,size_t & refacc, size_t & readacc){
+	size_t cur_l1,cur_r1,cur_l2,cur_r2;
+	current_al.get_lr1(cur_l1,cur_r1);	
+	current_al.get_lr2(cur_l2,cur_r2);
+	unsigned int cur_ref1 = current_al.getreference1();
+	unsigned int cur_ref2 = current_al.getreference2();
+//	std::string ref_accession = data.get_acc(refacc);
+	size_t seqlength = data.get_seq_size(cur_ref1);//We use this seq from its r1+1 to length-1. It is part of the ref node that comes after current alignment.
+	std::string current_ref_node_name = data.get_seq_name(current_al.getreference1());
+	int current_name = std::stoi(current_ref_node_name); //TODO revision! if number of nodes are too big, this way of conversion can cause an error
+	std::cout << "current node name "<< current_name << std::endl;
+	std::string from_current_node;
+	size_t from = 0;
+	size_t to = 0;
+	if(cur_r1 != seqlength-1 && (current_al.getbegin1() < current_al.getend1())){
+		from = cur_r1+1;
+		to = seqlength-1;
+		from_current_node = data.extract_seq_part(cur_ref1,from,to);
+	}
+	if(current_al.getbegin1() > current_al.getend1()){//If reverse
+		from = 0;
+		to = 0;
+		if(cur_l1 != 0){
+			to = cur_l1-1;
+			from_current_node = data.extract_seq_part(cur_ref1,from,to);
+			std::string temp;
+			get_reverse_complement(from_current_node,temp);
+			from_current_node = temp;
+		}
+		current_name = -1*current_name;
+	}
+	std::cout << "to "<< to << " from "<< from << " seqlength "<< seqlength<< " remainder length "<< from_current_node.length() << std::endl;
+//	size_t current_remainder = to-from +1;
+//	std::cout << "current remainder is "<< to-from+1 << std::endl;
+	std::cout<< "Here "<<std::endl;
+	std::map<int,std::pair<double, const pw_alignment> > SEEN; //To avoid reading the same part of the ref. graph again and again for different 'neighbors'. //TODO Further improvment! Don't touch it for the time being
+	for(std::multiset<pw_alignment,sort_pw_alignment_by_left>::iterator it= neighbors.begin() ; it != neighbors.end();it++){
+		//If neighbor is in 'nodes'
+		size_t nex_l1, nex_r1 ,nex_l2, nex_r2;
+		const pw_alignment nex_al = *it;
+		nex_al.print();
+		nex_al.get_lr1(nex_l1,nex_r1);
+		nex_al.get_lr2(nex_l2,nex_r2);
+		unsigned int nex_ref1 = nex_al.getreference1();
+
+		std::string nex_seqname = data.get_seq_name(nex_al.getreference1());
+		size_t nex_length = nex_seqname.length();
+		int nex_name = std::stoi(nex_seqname);
+		if(nex_al.getbegin1()>nex_al.getend1()){
+			nex_name = -1*nex_name;
+		}
+		std::cout << "neigbor is " << nex_name <<std::endl;
+		std::set<int>::iterator findnode = nodes.find(nex_name);
+		if(findnode != nodes.end() && nex_name != current_name){
+			if(nex_name > 0 && nex_l1 > MAXGAP){
+				std::cout << "long node!" <<std::endl;
+				continue;
+			}
+			if(nex_name < 0 && (nex_length-nex_r1>MAXGAP)){
+				
+				continue;
+			}
+			//Make an for the remainder,add it to the current_al and use it as a previous alignment for the neigbors
+			pw_alignment this_al = current_al;
+			size_t from_on_read = cur_r2+1;
+			if(from_current_node.length() !=0){
+				size_t to_on_read = nex_l2-1;
+				std::string readin = data.extract_seq_part(cur_ref2,from_on_read,to_on_read); 
+				needleman<T> nl(data, model, readin, from_current_node);
+				size_t type = 3;
+				std::string readout, refout;
+				nl.run_needleman(readacc,refacc,type,readout,refout);
+				size_t readcounter = 0;
+				for(size_t i = 0; i < readout.size();i++){
+					if(readout.at(i)!= '-') readcounter++;
+				}
+				if(readcounter>0 ){
+					to_on_read = from_on_read + readcounter -1;
+				}else{
+					to_on_read = data.getSequence(cur_ref2).length();
+				}
+				if(current_al.getbegin1() < current_al.getend1()){
+					pw_alignment nwal(refout,readout,from,from_on_read,to,to_on_read,cur_ref1,cur_ref2);
+					this_al = nwal;
+				}else{
+					pw_alignment nwal(refout,readout,to,from_on_read,from,to_on_read,cur_ref1,cur_ref2);
+					this_al = nwal;					
+				}
+				add_adjacencies(comp, current_al , this_al , refacc, readacc);
+			/*	std::map<pw_alignment, size_t, compare_pw_alignment>::iterator it = node_indices.at(comp).find(this_al);
+				assert(it != node_indices.at(comp).end());
+				cur_index = it->second;*/
+				if(to_on_read == nex_l2-1){
+					std::cout << "end of read is reached! "	<<std::endl;
+				} //We can't stop here because we want to reach to the nex_al!!!
+				from_on_read = to_on_read;
+			}
+			size_t to_on_read = nex_l2; //It is in fact to + 1!!
+			int n = static_cast<int>(nodes.size());
+			std::cout << "n "<< n<<std::endl;
+			DotFibonacciHeap myHeap;
+			std::map<int, int> cur_pre;
+			std::map<int,const pw_alignment> als_on_nodes;
+			heap_dijkstra(myHeap,this_al,nex_al, cur_pre,current_name , nex_name, to_on_read, refacc,readacc,als_on_nodes);
+			get_single_shortest_path(comp,cur_pre,nex_name,current_name,readacc,refacc, als_on_nodes);
+			std::cout << als_on_nodes.size()<<std::endl;
+			std::cout << "end of cur-pre"<<std::endl;
+		}else if(findnode != nodes.end() && nex_name == current_name && cur_r1<nex_l1 && nex_l1-cur_r1<=MAXGAP & nex_name > 0){
+			std::cout << "on the same node - forward "<< std::endl;
+			size_t from = cur_r1+1;
+			size_t to = nex_l1-1;
+			size_t onread_from = cur_r2+1;
+			size_t onread_to = nex_l2 -1;
+			std::cout<<"when they share a node forward"<<std::endl;
+			current_al.print();
+			nex_al.print();
+			if((cur_r2 == nex_l2-1) && (cur_r1 != nex_l1-1)){
+				std::cout<<"only gap on read "<<std::endl;
+				//only gap on read 
+				onread_from = cur_r2;
+				onread_to = data.get_seq_size(cur_ref2);
+				make_al_on_a_node(comp,current_al,nex_al,true,cur_ref1,from,to,cur_ref2,onread_from,onread_to,refacc,readacc);
+			}
+			else if((cur_r2 != nex_l2-1) && (cur_r1 == nex_l1-1)){
+				unsigned int temp = data.numSequences()+1;//only gap on ref
+				from = 0;
+				to = 0;
+				make_al_on_a_node(comp,current_al,nex_al,true,temp,from, to,cur_ref2,onread_from,onread_to,refacc,readacc);
+			}
+			else if((cur_r2 != nex_l2-1) && (cur_r1 != nex_l1-1)){
+				make_al_on_a_node(comp,current_al,nex_al,true,cur_ref1,from,to,cur_ref2,onread_from,onread_to,refacc,readacc);
+			}else{//Nothing in between, directly connects them to each other
+				assert((cur_r2 == nex_l2-1) && (cur_r1 == nex_l1-1));
+				add_adjacencies(comp,current_al,nex_al,refacc,readacc);
+			}
+		}else if(findnode != nodes.end()&& nex_name == current_name && nex_r1<cur_l1 && cur_l1-nex_r1<=MAXGAP & nex_name < 0){ //TODO have to add this condition!
+			std::cout << "negatively share a node! "<<std::endl;
+			size_t from = cur_l1-1;
+			size_t to = nex_r1+1;
+			size_t onread_from = cur_r2+1;
+			size_t onread_to = nex_l2 -1;
+			if((cur_r2 == nex_l2-1) && (cur_l1 != nex_r1+1)){
+				std::cout<<"only gap on read "<<std::endl;
+				//only gap on read 
+				onread_from = cur_r2;
+				onread_to = data.get_seq_size(cur_ref2);
+				make_al_on_a_node(comp,current_al,nex_al,false,cur_ref1,to,from,cur_ref2,onread_from,onread_to,refacc,readacc);
+			}
+			std::cout << "else! "<<std::endl;
+		}
+
+	}
+}
+template<typename T>
+void als_components<T>::heap_dijkstra(DotFibonacciHeap & myHeap, const pw_alignment& current, const pw_alignment& neighbor, std::map<int, int> & cur_pre, int & cur_name, int & next_name, size_t & to_on_read ,size_t & refacc, size_t & readacc, std::map<int,const pw_alignment> & als_on_nodes){
+	//Find the shortest path between the current and neighbor using 'Fibonacci heap'
+	std::set<std::vector<int> > all_p = rgraph.get_paths();
+	std::set<std::vector<int> > PATH;
+	std::set<int> nodes_on_paths;
+	//Finding all the nodes between the current node and the neighbor:
+	std::cout << "all_p size: "<< all_p.size()<<std::endl;//TODO very inefficient! Think about it!!
+	for(std::set<std::vector<int> >::iterator it = all_p.begin(); it!= all_p.end() ; it++){
+		std::vector<int> temp = *it;
+		std::vector<int> this_p;
+		for(size_t j = 0; j < temp.size(); j++){
+			this_p.push_back(temp.at(j));
+			if(temp.at(j)==next_name){
+				PATH.insert(this_p);
+				std::cout << this_p <<std::endl;
+				for(size_t k = 0; k < this_p.size();k++){
+					nodes_on_paths.insert(this_p.at(k));
+				}
+				break;
+			}
+		}
+	}
+	//Seen and Frontier sets;
+	std::set<int> seen;
+	std::set<int> frontier;
+//	int n = static_cast<int>(nodes_on_paths.size());
+//	std::cout << "n "<< n<<std::endl;
+//	FHeap * myHeap = new FHeap(n);
+	double dist = 0.0;
+	std::map<int, double> distance;
+	std::map<double, std::vector<int> > distance_node;
+
+	distance.insert(std::make_pair(cur_name,dist));
+
+	int startnode = cur_name;
+	frontier.insert(startnode);
+	unsigned int read_id = current.getreference2();
+	als_on_nodes.insert(std::make_pair(cur_name,current));
+//	myHeap->insert(startnode,dist);
+	std::cout << "here"<<std::endl;
+	myHeap.insert(dist);
+	std::vector<int> temp;
+	temp.push_back(cur_name);
+	distance_node.insert(std::make_pair(dist,temp));
+	std::cout << "startnode "<< startnode << " next name "<< next_name <<std::endl;
+//	startnode = myHeap->deleteMin();
+	myHeap.removeMinimum();
+	while(startnode != next_name){
+		seen.insert(startnode);
+		std::set<int>::iterator front = frontier.find(startnode);
+		assert(front != frontier.end());
+		frontier.erase(front);
+		std::map<int,const pw_alignment>::iterator thisnode_al = als_on_nodes.find(startnode);
+		assert(thisnode_al != als_on_nodes.end());
+		std::cout << "cur al is "<<std::endl;
+		thisnode_al->second.print();
+		const pw_alignment current_al = thisnode_al->second;
+		size_t l2,r2;
+		thisnode_al->second.get_lr2(l2,r2);
+		size_t from_on_read = r2 +1;
+		std::map<int,double>::iterator dis = distance.find(startnode);
+		assert(dis != distance.end());
+		dist = dis->second;
+		//Find adjs, check if they are on any path
+		std::set<int> adjs = rgraph.get_adjacencies(startnode); 
+		assert(adjs.size() != 0);
+		std::set<int>::iterator it = adjs.find(next_name);
+		if(it == adjs.end()){
+			for(std::set<int>::iterator it= adjs.begin(); it != adjs.end(); it++){
+				int this_adj = *it;
+				std::cout << "this adj " << this_adj <<std::endl;			
+				unsigned int ref_id = rgraph.get_refid(refacc,this_adj);
+				size_t ref_to = data.getSequence(ref_id).length()-1;
+				size_t ref_from = 0;
+				if(this_adj < 0){
+					ref_from = data.getSequence(ref_id).length()-1;
+					ref_to = 0;
+					std::cout << "here ref from "<< ref_from << " ref to "<< ref_to <<std::endl; 
+				}
+				run_nw_algorithm(myHeap,read_id, startnode, neighbor, this_adj,seen,frontier,refacc,readacc,from_on_read,to_on_read,false,ref_from,ref_to,nodes_on_paths,distance,distance_node,dist,cur_pre,als_on_nodes);
+			}
+		}else{
+			//TODO adj is the next al : make an al with the remaining ref and read, weigh it, add it to heap then it stops as soon as it becomes the 'startnode'
+			std::cout << "LASTNODE "<<std::endl;
+			size_t l1,r1;
+			neighbor.get_lr1(l1,r1); //TODO what if node is negative?
+			size_t ref_to = l1; //infact this is to + 1
+			size_t ref_from = 0;
+			if(next_name < 0){
+				ref_to = r1;
+				ref_from = data.getSequence(neighbor.getreference1()).length()-1;
+				std::cout << "length of the node "<< data.getSequence(neighbor.getreference1()).length() <<std::endl;
+			}
+			run_nw_algorithm(myHeap,read_id,startnode, neighbor, next_name,seen,frontier,refacc,readacc,from_on_read,to_on_read,true,ref_from,ref_to,nodes_on_paths,distance,distance_node,dist,cur_pre,als_on_nodes);
+		}
+		double min_distance = myHeap.getMinimum();
+		std::cout << "min dist "<< min_distance <<std::endl;
+		std::map<double, std::vector<int> >::iterator dis_node = distance_node.find(min_distance);
+		assert(dis_node != distance_node.end());
+		assert(dis_node->second.size()>=1);
+		startnode = dis_node->second.at(0);
+		myHeap.removeMinimum();
+		dis_node->second.erase(dis_node->second.begin());
+		std::cout << "start node is " << startnode <<std::endl;
+	}
+	std::cout << "after while loop"<<std::endl;
+}
+template<typename T>
+void als_components<T>::run_nw_algorithm(DotFibonacciHeap & myHeap, unsigned int read_id, int & startnode , const pw_alignment& neighbor, int & node_name, std::set<int> & seen , std::set<int> & frontier,size_t & refacc, size_t & readacc, size_t & from_on_read, size_t & to_on_read, bool LASTNODE,size_t & ref_from, size_t & ref_to, std::set<int> & nodes_on_paths, std::map<int, double> & distance, std::map<double,std::vector<int> > & distance_node, double & parent_dist,std::map<int, int> & cur_pre,std::map<int,const pw_alignment> & als_on_nodes){
+	pw_alignment this_al; 
+	std::cout << "this_adj "<< node_name <<std::endl;
+	std::cout << "from on read " << from_on_read << " to " << to_on_read << std::endl;
+	std::set<int>::iterator findnode = nodes_on_paths.find(node_name);
+	std::set<int>::iterator SEEN = seen.find(node_name); //TODO Haven't used it yet, maybe i can use it to make t faster
+	if(findnode != nodes_on_paths.end() && (SEEN == seen.end())){ //TODO how can I handle loop ??
+		//NW algorithm:
+		unsigned int ref_id = rgraph.get_refid(refacc,node_name);
+		if(((ref_to == 0 && node_name > 0) || (ref_to == data.getSequence(neighbor.getreference1()).length()-1 && node_name < 0))&& LASTNODE == true){//nothing left from the beginning(or end(for negative nodes)) of the last node
+			//TODO gap only or next_al if end of read is reached
+			assert(LASTNODE == true);
+			std::cout << "from on read " << from_on_read << " to " << to_on_read << std::endl;
+			if(from_on_read == to_on_read){
+				//Add to the next_al
+				this_al = neighbor;
+				neighbor.print();
+			}else{
+				//A gap only alignment on ref //XXX with this approach i assume i shall add this at the begining of the last al here! 
+				size_t to;
+				to = to_on_read - 1;
+				std::string readin = data.extract_seq_part(read_id,from_on_read,to);
+
+				std::string str_ref(readin.length(),'-');
+				readin = readin+ neighbor.get_al_ref2();
+				std::string refin;
+				size_t l1,r1,l2,r2;
+				neighbor.get_lr1(l1,r1);
+				neighbor.get_lr2(l2,r2);
+				size_t this_to_on_read = r2;
+				ref_from = l1;
+				ref_to = r1;
+				if(node_name>0){
+					assert(ref_from == 0);
+					refin =str_ref +  neighbor.get_al_ref1();
+				}else{
+					assert(ref_to == data.getSequence(neighbor.getreference1()).length()-1);
+				//	refin =neighbor.get_al_ref1() + str_ref; XXX
+					refin =str_ref +  neighbor.get_al_ref1();
+
+					ref_from = r1;
+					ref_to = l1;
+				}
+				std::cout << "readin " << readin << std::endl;
+				std::cout << "refin  " << refin << std::endl;
+				pw_alignment p1(refin,readin,ref_from,from_on_read,ref_to,this_to_on_read,ref_id,read_id);
+				this_al = p1;
+				this_al.print();
+			}
+		}
+		else if(from_on_read != to_on_read){ //no gap on ref nor read
+			std::string refin;
+		/*	if(ref_id == 8254){
+				size_t b = 0;
+				size_t e = 67;
+				std::cout << "on 8254 "<<std::endl;
+				refin = data.extract_seq_part(ref_id,b,e);
+				std::cout << "seq: " << refin <<std::endl;
+				refin = data.extract_reverse_seq_part(ref_id,b,e);
+				std::cout << "rev seq: "<<refin <<std::endl;
+
+			}*/
+			if(node_name > 0){//being part of the last node is already taken into account
+				if(LASTNODE == true) ref_to--;
+				std::cout<< "ref id "<< ref_id << " ref to " << ref_to << " ref from " << ref_from <<std::endl;
+				
+				refin = data.extract_seq_part(ref_id, ref_from,ref_to);
+			}else{
+				std::cout << "ref to " << ref_to << " ref from " << ref_from <<std::endl;
+				if(LASTNODE == true) ref_to++;
+				refin = data.extract_reverse_seq_part(ref_id, ref_to, ref_from);
+			//	ref_from = ref_to;
+			//	ref_to =  data.getSequence(neighbor.getreference1()).length()-1; //TODO or length!!
+			}
+			std::cout << ref_from << " " << ref_to << std::endl;
+			size_t this_to_on_read = to_on_read -1;
+			std::string readin = data.extract_seq_part(read_id,from_on_read,this_to_on_read); //TODO from and to on read, if gap onlyon one or the other!
+			std::cout << "read in from "<< from_on_read << " to " << this_to_on_read << std::endl;
+			std::string refout;
+			std::string readout;
+			needleman<T> nl(data, model, readin, refin);
+			size_t type;
+			if(LASTNODE == false){
+				type = 3; //TODO check for the type
+			}else{
+				type = 5;
+			}
+			std::cout << "run: "<<std::endl;
+			nl.run_needleman(readacc,refacc,type,readout,refout);
+			size_t readcounter = 0;
+			for(size_t i = 0; i < readout.size();i++){
+				if(readout.at(i)!= '-') readcounter++;
+			}
+		//	size_t this_to_on_read;
+			if(readcounter>0 ){
+				this_to_on_read = from_on_read + readcounter -1;
+				assert(this_to_on_read <= to_on_read);
+			}else{
+				this_to_on_read = data.getSequence(read_id).length();
+			}
+			pw_alignment nwal(refout,readout,ref_from,from_on_read,ref_to,this_to_on_read,ref_id,read_id);
+			this_al = nwal;
+		}else{
+			//Gap only on read
+			std::cout << "gap on read "<<std::endl;
+			std::string refin;
+			if(node_name > 0){//being part of the last node is already taken into account
+				if(LASTNODE == true) ref_to--;
+				refin = data.extract_seq_part(ref_id, ref_from,ref_to);
+			}else{
+				if(LASTNODE == true){
+					ref_to++;
+				}else{
+					assert(ref_to == 0);
+				}
+				std::cout << ref_from << " " << ref_to << std::endl;
+				refin = data.extract_reverse_seq_part(ref_id, ref_to, ref_from);
+			}
+			std::string readin(refin.length(),'-');
+			size_t this_to_on_read = data.getSequence(read_id).length();
+
+			pw_alignment nwal(refin,readin,ref_from,from_on_read,ref_to,this_to_on_read,ref_id,read_id);
+			this_al = nwal;
+			this_al.print();
+		//	exit(1);
+		}
+		double m1,m2;
+		model.cost_function(this_al, m1, m2, refacc,readacc);
+		std::cout << "m1" << m1 << " dist " << parent_dist <<std::endl;
+		double this_weight = m1 + parent_dist;
+		std::map<int,double>::iterator dist = distance.find(node_name);
+		if(dist == distance.end()){
+			std::cout << "end of dist"<<std::endl;
+			cur_pre.insert(std::make_pair(node_name, startnode));
+			distance.insert(std::make_pair(node_name,this_weight));
+			std::map<double, std::vector<int> >::iterator find_weight = distance_node.find(this_weight);
+			if(find_weight == distance_node.end()){
+				distance_node.insert(std::make_pair(this_weight, std::vector<int>()));
+				find_weight = distance_node.find(this_weight);
+			}
+			als_on_nodes.insert(std::make_pair(node_name,this_al));
+			std::set<int>::iterator front = frontier.find(node_name);
+			if(front == frontier.end()){
+				frontier.insert(node_name);
+			//	myHeap->insert(node_name,this_weight);
+				myHeap.insert(this_weight);
+				std::cout << "insert " << node_name << std::endl;
+			}else{ //TODO Does it happen?? 
+			//	myHeap->decreaseKey(node_name,this_weight);
+				myHeap.decreaseKey(myHeap.find(this_weight),this_weight);
+				std::cout << "decrease key "<< std::endl;
+			}
+			find_weight->second.push_back(node_name);
+		}else{
+			if(dist->second > this_weight){
+				double pre_weight = dist->second;
+				dist->second = this_weight;
+				cur_pre.insert(std::make_pair(node_name, startnode));
+			//	distance.insert(std::make_pair(node_name,this_weight));
+				als_on_nodes.insert(std::make_pair(node_name,this_al));
+				std::map<double, std::vector<int> >::iterator find_weight = distance_node.find(this_weight);
+				if(find_weight == distance_node.end()){
+					distance_node.insert(std::make_pair(this_weight, std::vector<int>()));
+					find_weight = distance_node.find(this_weight);
+				}
+
+				std::set<int>::iterator front = frontier.find(node_name);
+				if(front == frontier.end()){
+					frontier.insert(node_name);
+				//	myHeap->insert(node_name,this_weight);
+					myHeap.insert(this_weight);
+				}else{
+				//	myHeap->decreaseKey(node_name,this_weight);
+					std::cout << "node name " << node_name << " weight "<< this_weight << " weight " << dist->second << " pre wieght "<< pre_weight << std::endl;
+				//	myHeap.decreaseKey(myHeap.find(dist->second),this_weight);
+					myHeap.decreaseKey(myHeap.find(pre_weight),this_weight);
+					std::cout << "here! "<<std::endl;
+				}
+				find_weight->second.push_back(node_name);				
+
+			}else{
+			}
+		}
+	}
+	std::cout << "end of if"<<std::endl;
+
+
+}
+template<typename T>
+void als_components<T>::get_single_shortest_path(size_t & comp, std::map<int,int> & cur_pre , int & lastnode, int & firstnode, size_t & readacc, size_t & refacc,std::map<int, const pw_alignment> & als_on_nodes){
+	std::vector<int> shortest_path;
+	shortest_path.push_back(lastnode);
+	std::cout<< "node "<<lastnode << " ";
+	std::map<int, int>::iterator it = cur_pre.find(lastnode);
+	assert(it != cur_pre.end());
+	while(it!= cur_pre.end()){
+		shortest_path.push_back(it->second);
+		std::cout << "pre " <<it->second << " " <<std::endl;
+		int node = it->second;
+		std::map<int, const pw_alignment>::iterator als1 = als_on_nodes.find(it->second); //Previous 
+		assert(als1 != als_on_nodes.end());
+		std::map<int, const pw_alignment>::iterator als2 = als_on_nodes.find(it->first); //Current
+		assert(als2 != als_on_nodes.end());
+		add_adjacencies(comp,als1->second , als2->second, refacc, readacc);
+		it = cur_pre.find(node);
+	}
+	std::cout << " "<<std::endl;
+	assert(shortest_path.back()==firstnode);
+//	std::reverse(shortest_path.begin(),shortest_path.end());
 
 }
 #endif

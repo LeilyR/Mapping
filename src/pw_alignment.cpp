@@ -32,7 +32,7 @@ pw_alignment::pw_alignment(std::string sample1str, std::string sample2str, size_
 
 }
 
-pw_alignment::pw_alignment(const size_t & begin1, const size_t & begin2, const size_t & end1, const size_t & end2, const size_t & reference1, const size_t & reference2):begins(2), ends(2), references(2), costs_cached(false), create_costs(0), modify_costs(0), samples(0)  {
+/*pw_alignment::pw_alignment(const size_t & begin1, const size_t & begin2, const size_t & end1, const size_t & end2, const size_t & reference1, const size_t & reference2):begins(2), ends(2), references(2), costs_cached(false), create_costs(0), modify_costs(0), samples(0){
 	begins.at(0) = begin1;
 	begins.at(1) = begin2;
 	ends.at(0) = end1;
@@ -40,7 +40,7 @@ pw_alignment::pw_alignment(const size_t & begin1, const size_t & begin2, const s
 	references.at(0) = reference1;
 	references.at(1) = reference2;
 	
-}
+}*/
 pw_alignment::pw_alignment(): begins(2), ends(2), references(2), costs_cached(false), create_costs(0), modify_costs(0), samples(2) {}
 
 pw_alignment::~pw_alignment() {
@@ -48,7 +48,7 @@ pw_alignment::~pw_alignment() {
 }
 
 
-pw_alignment::pw_alignment(const pw_alignment & p) {
+/*pw_alignment::pw_alignment(const pw_alignment & p) {
 	begins = p.begins;
 	ends = p.ends;
 	samples = p.samples;
@@ -58,7 +58,7 @@ pw_alignment::pw_alignment(const pw_alignment & p) {
 	modify_costs = p.modify_costs;
 
 
-}
+}*/
 
 size_t pw_alignment::alignment_length() const {
 	return samples.at(0).size() / 3;
@@ -946,6 +946,9 @@ bool compare_pw_alignment::operator()(const pw_alignment &ar, const pw_alignment
 // if(ar.getbegin(0)
 	const pw_alignment * a = &ar;
 	const pw_alignment * b = &br;
+/*	if(a->equals(*b)){
+
+	}else{*/
 	size_t asmaller = 0;//TODO replace it with calling the new one
 	size_t abigger = 1;
 	if(a->getreference(0) > a->getreference(1)) {
@@ -1003,14 +1006,59 @@ bool compare_pw_alignment::operator()(const pw_alignment &ar, const pw_alignment
 	if (a->getend(asmaller) < b->getend(bsmaller))return true;
 	if (a->getend(asmaller) > b->getend(bsmaller))return false;
 
-	if ( a->getbegin(abigger) < b->getbegin(bbigger)) return true;
-	if ( a->getbegin(abigger) > b->getbegin(bbigger)) return false;
-	
-	if ( a->getend(abigger) < b->getend(bbigger)) return true;
-	if ( a->getend(abigger) > b->getend(bbigger)) return false;
+	if ( a->getbegin(abigger) < b->getbegin(bbigger)){
+	//	std::cout<< "abigger < bbigger"<<std::endl;
+		return true;
+	}
+	if ( a->getbegin(abigger) > b->getbegin(bbigger)){
+	//	std::cout<< "abigger > bbigger"<<std::endl;		
+		return false;
+	}
+	if ( a->getend(abigger) < b->getend(bbigger)){
+	//	std::cout<< "end abigger < bbigger"<<std::endl;		
+		return true;
+	}
+	if ( a->getend(abigger) > b->getend(bbigger)){
+	//	std::cout<< "end abigger > bbigger"<<std::endl;
+		return false;
+	}
+	if(a->get_al_ref1().compare(b->get_al_ref1())<0) return true;
+	if(a->get_al_ref1().compare(b->get_al_ref1())>0) return false;
+	if(a->get_al_ref2().compare(b->get_al_ref2())<0) return true;
+	if(a->get_al_ref2().compare(b->get_al_ref2())>0) return false;
 
+/*	for(size_t i = 0; i < a->get_al_ref1().length();i++){ //XXX in case it works, still it is not optimal, since it makes the comparison sooo slow //TODO 
+		std::cout << "last condition"<<std::endl;
+		if(pw_alignment::base_to_index(a->get_al_ref1().at(i))<pw_alignment::base_to_index(b->get_al_ref1().at(i))) return true;
+		if(pw_alignment::base_to_index(a->get_al_ref1().at(i))>pw_alignment::base_to_index(b->get_al_ref1().at(i))) return false;
+		if(pw_alignment::base_to_index(a->get_al_ref2().at(i))<pw_alignment::base_to_index(b->get_al_ref2().at(i))) return true;
+		if(pw_alignment::base_to_index(a->get_al_ref2().at(i))>pw_alignment::base_to_index(b->get_al_ref2().at(i))) return false;
+	}*/
 	return false;
 
+}
+size_t pw_alignment::base_to_index(char base) {
+	switch(base){
+		case 'A':	
+		return 0;
+		break;
+		case 'T':
+		return 1;
+		break;
+		case 'C':
+		return 2;
+		break;
+		case 'G':
+		return 3;
+		break;
+		case 'N':		
+		return 4;
+		break;
+		case '-':
+		return 5;
+		break;
+		}
+	return 100;
 }
 
 template<typename alignment>
@@ -1149,7 +1197,6 @@ bool compare_alignment<alignment>::operator()(const alignment_type &ar, const al
 	
 	if ( a->getend(abigger) < b->getend(bbigger)) return true;
 	if ( a->getend(abigger) > b->getend(bbigger)) return false;
-
 	return false;
 
 }
@@ -1215,7 +1262,10 @@ bool pw_alignment::equals(const pw_alignment & al) const {
 			al.getbegin1() == begins.at(0) &&
 			al.getend1() == ends.at(0) &&
 			al.getbegin2() == begins.at(1) &&
-			al.getend2() == ends.at(1)		
+			al.getend2() == ends.at(1) && 
+			al.get_al_ref1() == get_al_ref1() &&
+			al.get_al_ref2() == get_al_ref2()	
+
 		) {
 			return true;
 		}
@@ -1225,7 +1275,10 @@ bool pw_alignment::equals(const pw_alignment & al) const {
 			al.getbegin1() == begins.at(1) &&
 			al.getend1() == ends.at(1) &&
 			al.getbegin2() == begins.at(0) &&
-			al.getend2() == ends.at(0)	
+			al.getend2() == ends.at(0) &&
+			al.get_al_ref1() == get_al_ref2() &&
+			al.get_al_ref2() == get_al_ref1()	
+	
 		) {
 			return true;
 		} 	
@@ -1462,7 +1515,7 @@ located_alignment::located_alignment(const located_alignment & p) {
 /*
 	create from pairwise alignment. la is always without gaps at ends
 */
-located_alignment::located_alignment(const all_data * data, const pw_alignment & p): data(data), length(p.alignment_length()), last_segment(0), pw_alignment(p.getbegin1(), p.getbegin2(), p.getend1(), p.getend2(), p.getreference1(), p.getreference2()) {
+located_alignment::located_alignment(const all_data * data, const pw_alignment & p): data(data), length(p.alignment_length()), last_segment(0), pw_alignment(p.get_al_ref1(), p.get_al_ref2(), p.getbegin1(), p.getbegin2(), p.getend1(), p.getend2(), p.getreference1(), p.getreference2()) {
 // separate content of p into segments without gap
 	size_t last_begin1 = std::numeric_limits<size_t>::max();
 	size_t last_begin2 = std::numeric_limits<size_t>::max();

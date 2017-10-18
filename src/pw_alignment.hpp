@@ -32,10 +32,10 @@ class pw_alignment {
 	public:
 	
 	pw_alignment(std::string sample1, std::string sample2, size_t sample1_begin, size_t sample2_begin, size_t sample1_end, size_t sample2_end,size_t sample1reference, size_t sample2reference);
-	pw_alignment(const size_t & begin1, const size_t & begin2, const size_t & end1, const size_t & end2, const size_t & reference1, const size_t & reference2);
+//	pw_alignment(const size_t & begin1, const size_t & begin2, const size_t & end1, const size_t & end2, const size_t & reference1, const size_t & reference2);
 	pw_alignment();
 	virtual ~pw_alignment();
-	pw_alignment(const pw_alignment & p);
+//	pw_alignment(const pw_alignment & p);
 
 
 	virtual size_t alignment_length() const;
@@ -117,6 +117,8 @@ class pw_alignment {
 	virtual void get_reverse_complement_sample(std::vector<std::vector<bool> > &);
 	virtual void simulate_split(const size_t & ref, const size_t & pos, size_t & sp1, size_t & sp2) const ;
 	virtual bool onlyGapSample() const;
+	static size_t base_to_index(char);
+
 	protected:
 	std::vector<size_t> begins;
 	std::vector<size_t> ends;
@@ -125,7 +127,6 @@ class pw_alignment {
 	static inline void base_translate(char base, bool & bit1, bool & bit2, bool & bit3);
 	static inline char base_translate_back(bool bit1, bool bit2, bool bit3);
 	static inline char complement(char &);
-
 
 	// cache costs here:
 	mutable bool costs_cached;

@@ -10,7 +10,7 @@
 class ref_graph{
 	public:
 	ref_graph( const all_data & d):data(d){
-	//	longname2seqidx = data.getLongname2seqidx();
+		longname2seqidx = data.getLongname2seqidx();
 	//	std::map<std::string, size_t>::iterator longname = longname2seqidx.begin();
 	//	std::cout << "the begin is "<< longname->first<<std::endl;
 	}
@@ -83,8 +83,11 @@ class ref_graph{
 
 	}
 
-	void merge_nodes(size_t &, size_t &);
-	void merge_nodes_bfs(size_t & ref_acc, size_t & length);
+	void merge_nodes(std::string &, size_t &);
+	void merge_nodes_bfs(std::string & ref_acc, size_t & length);
+	void edge_contraction();
+	void find_d1_nodes(int &, std::set<int> & seen);
+	void write_gfa(std::ofstream &);
 	private:
 	const all_data & data;
 	std::map<std::string, size_t> longname2seqidx;
@@ -104,10 +107,12 @@ class ref_graph{
 	std::map<int, std::set<int> > pre_nodes_on_subgraph;
 
 	std::map<int , std::set<std::pair<std::vector<int>,size_t> > > parent_length;
-	std::map<int, std::string> nodes_content;
-
+	std::map<int, std::string> nodes_content; //index , string --> the node content
+	std::map<int, std::string> new_nodes_content;
 	std::map<int , std::set<int> > new_edges; //XXX Add the end dont forget that the negative directions need to be added.
-	std::map<int , std::vector<int> > old_edges; //Has merged nodes and from which nodes they came
+	std::map<std::vector<int>, int > old_edges; //Has merged nodes and from which nodes they came
+
+	std::set<int> begin_nodes;
 
 };
 
@@ -121,7 +126,7 @@ class Kgraph{
 				sequence_out += dnastring::complement(sequence_in.at(i-1));
 			}
 		}
-		void dfs(std::map<std::pair<int,int>, std::vector<std::string> > & remainder, int  this_node, int  pre_node , std::map<int,bool> & visited);
+		void bfs(std::map<std::pair<int,int>, std::vector<std::string> > & remainder, int  this_node, int  pre_node , std::map<int,bool> & visited);
 		const std::map<std::string, std::set<std::string> > get_edges()const{
 			return edges;
 		}

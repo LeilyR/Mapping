@@ -30,14 +30,14 @@ LIBARGS =   apclusterunix64.so -L../dlib_build -ldlib  libStatGen-1.0.13/libStat
 
 PROGS =  mapping
 
-OBJS = data.o needleman_wunsch.o map_read.o dijkstra.o ref_graph.o test_mapping.o simple_NW_algo.o
+OBJS = data.o needleman_wunsch.o map_read.o dijkstra.o ref_graph.o test_mapping.o simple_NW_algo.o fibonacci_heap.o
 
 all: $(PROGS)
 
 
 
 
-mapping: main.cpp $(OBJS) pw_alignment.hpp data.hpp needleman_wunsch.hpp simple_NW_algo.hpp map_read.hpp ref_graph.hpp test_mapping.hpp alignment_index.hpp alignment_index.cpp intervals.hpp intervals.cpp needleman_wunsch.cpp dynamic_mc.hpp dynamic_mc.cpp
+mapping: main.cpp $(OBJS) pw_alignment.hpp data.hpp needleman_wunsch.hpp simple_NW_algo.hpp map_read.hpp ref_graph.hpp test_mapping.hpp alignment_index.hpp alignment_index.cpp intervals.hpp intervals.cpp needleman_wunsch.cpp dynamic_mc.hpp dynamic_mc.cpp fibonacci_heap.hpp fibonacci_heap.cpp
 	$(CXX) -o mapping $(CXXFLAGS) $(INCLUDEARGS) main.cpp $(OBJS) $(LIBARGS)
 	
 data.o: data.cpp pw_alignment.hpp data.hpp
@@ -53,7 +53,7 @@ dijkstra.o: dijkstra.hpp dijkstra.cpp
 	$(CXX) -o dijkstra.o $(CXXFLAGS) $(INCLUDEARGS) -c dijkstra.cpp
 
 
-map_read.o: map_read.cpp map_read.hpp
+map_read.o: map_read.cpp map_read.hpp 
 	$(CXX) -o map_read.o $(CXXFLAGS) $(INCLUDEARGS) -c map_read.cpp
 
 test_mapping.o: test_mapping.cpp test_mapping.hpp
@@ -66,6 +66,8 @@ ref_graph.o: ref_graph.cpp ref_graph.hpp
 simple_NW_algo.o: simple_NW_algo.cpp simple_NW_algo.hpp
 	$(CXX) -o simple_NW_algo.o $(CXXFLAGS) $(INCLUDEARGS) -c simple_NW_algo.cpp
 
+fibonacci_heap.o: fibonacci_heap.cpp fibonacci_heap.hpp
+	$(CXX) -o fibonacci_heap.o $(CXXFLAGS) $(INCLUDEARGS) -c fibonacci_heap.cpp
 
 clean:
 	@-rm -f $(PROGS) *.o  *.a *~

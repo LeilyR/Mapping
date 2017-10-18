@@ -25,7 +25,7 @@
 #include "map_read.hpp"
 #include "test_mapping.hpp"
 #include "hash.hpp"
-
+#include "fibonacci_heap.hpp"
 #define VERSION "0.0.1" 
 #define NUMVERISON 0
 #define MIN_READ_VERSION 0
@@ -373,11 +373,12 @@ int do_read_data(int argc, char * argv[]) {
 	all_data data;
 	typedef overlap overlap_type;
 	data.read_fasta_maf(fastafile, maffile);
-
+//	exit(1);
 //	data.read_accknown_fasta_sam(fastafile,samfile);
 //	std::vector<pw_alignment> alignments = data.getAlignments();
 	size_t seq_length = 0;
 	for(size_t i =0; i < data.numSequences();i++){
+//	for(size_t i =0; i <70;i++){
 		seq_length += data.getSequence(i).length();
 	}
 	std::cout << "total base number is " << seq_length <<std::endl;
@@ -429,7 +430,27 @@ int gfa_to_fasta(int argc, char * argv[]){
 		}
 	}
 }
+int do_refgraph_edge_contraction(int argc, char * argv[]){
+	if(argc < 3){ 
+		std::cerr << "Program: edge_contraction " << std::endl;
+		std::cerr << "Parameters: " << std::endl;
+		std::cerr << "* Ref(graph) gfa file " << std::endl;
+		std::cerr << "* Contracted gfa file " << std::endl;
+		return 1;
+	}
+	std::string refgfa(argv[2]);
+	std::string contractedgfa(argv[3]);
 
+	all_data data;
+	ref_graph rgraph(data);
+	std::cout<< "read gfa file: "<<std::endl;
+	rgraph.read_gfa_for_adj(refgfa);
+	rgraph.edge_contraction();
+	std::ofstream gfaout(contractedgfa.c_str());
+	rgraph.write_gfa(gfaout);
+
+
+}
 int do_read_map(int argc, char * argv[]){
 	/*
 	1. Gets read fasta, graph fasta, alignment maf file and read+graph fasta as an input
@@ -445,7 +466,7 @@ int do_read_map(int argc, char * argv[]){
 		std::cerr << "Parameters:" << std::endl;
 		std::cerr << "* Ref(graph) gfa file ('nogfa' if not using gfa)" << std::endl;
 		std::cerr << "* Ref(graph) dot file ('nodot' if not using dot)" << std::endl;
-		std::cerr << "* Read+Ref fasta file" << std::endl; //after running fasta_prepare on the original ref and read file(before fasta_prepare)
+		std::cerr << "* Read+Ref fasta file" << std::endl; //By running fasta_prepare on the original ref and read file(original means before fasta_prepare on eahc of them)
 		std::cerr << "* alignment maf file "<<std::endl; //I used LAST (make alignemnt between Ref.fasta and Read.fasta)
 		std::cerr << "* output maf file " << std::endl; 
 		std::cerr << "genomes and reads fasta "<<std::endl;
@@ -479,24 +500,42 @@ int do_read_map(int argc, char * argv[]){
 //	m.train();*/
 	//--------------------
 	all_data data;
-//TODO read a fasta file containing genomes have been used in making graph and reads, alignments between full genomes and reads. Consider all the genomes as on accession and all the reads as an other accession
 	data.read_fasta_maf_forward_read_only(allfasta,alignmentmaf);//All the alignments are read in a way the 'read' reference (second ref) of it is forward.
-	wrapper wrap;
-	use_model m(data,wrap, num_threads); //TODO take the wrapper out from the model!
-//	model m(data);
-	m.train();
-
-	//TODO anthoer data object, read allfasta and alignmentmaf in here. use this object from this point on
-
-	std::cout << "numseq: "<<data.numSequences()<<std::endl;
-	std::set<const pw_alignment*, compare_pointer_pw_alignment> al_with_pos_gain; 
-	std::string ref_accession;
 	const pw_alignment & al = data.getAlignment(0);
 	assert(al.getbegin2() < al.getend2());
 	size_t ref_acc = data.accNumber(al.getreference1());
 	std::cout << "ref accession is " << ref_acc <<std::endl;
+	std::string ref_accession;
 	ref_accession = data.get_acc(ref_acc);
-#pragma omp parallel for num_threads(num_threads)
+
+	ref_graph rgraph(data);
+
+	if(refdotfile != "nodot"){
+		std::cout<< "read dot file "<<std::endl;
+		rgraph.read_dot_file(refdotfile,ref_accession);//Fill in the vertix and edge container with the reference graph nodes and adjacencies
+	}
+	if(refgfa != "nogfa"){
+		std::cout<< "read gfa file "<<std::endl;
+		rgraph.read_gfa_for_adj(refgfa);
+	}
+	std::cout << "after gfa "<<std::endl;
+//	size_t LENGTH = 50;
+//	rgraph.merge_nodes(ref_accession,LENGTH);
+//	rgraph.edge_contraction();
+//	std::ofstream gfaout("test_merged.gfa");
+//	rgraph.write_gfa(gfaout);
+//	exit(1);
+
+//TODO read a fasta file containing genomes have been used in making graph and reads, alignments between full genomes and reads. Consider all the genomes as on accession and all the reads as an other accession
+	wrapper wrap;
+	use_model m(data,wrap, num_threads); //TODO take the wrapper out from the model!
+//	model m(data);
+	m.train();
+	//TODO anthoer data object, read allfasta and alignmentmaf in here. use this object from this point on
+
+	std::cout << "numseq: "<<data.numSequences()<<std::endl;
+	std::set<const pw_alignment*, compare_pointer_pw_alignment> al_with_pos_gain; 
+	#pragma omp parallel for num_threads(num_threads)
 	for(size_t i =0; i < data.numAlignments();i++){
 		std::cout << "al " << i << std::endl;
 		const pw_alignment & al = data.getAlignment(i);
@@ -523,18 +562,6 @@ int do_read_map(int argc, char * argv[]){
 //	std::map< std::string, size_t> longname2seqidx;
 //	longname2seqidx = data.getLongname2seqidx();
 //	std::cout<<longname2seqidx.size()<<std::endl;
-	ref_graph rgraph(data);
-	if(refdotfile != "nodot"){
-		std::cout<< "read dot file "<<std::endl;
-		rgraph.read_dot_file(refdotfile,ref_accession);//Fill in the vertix and edge container with the reference graph nodes and adjacencies
-	}
-	if(refgfa != "nogfa"){
-		std::cout<< "read gfa file "<<std::endl;
-		rgraph.read_gfa_for_adj(refgfa);
-	}
-	std::cout << "after gfa "<<std::endl;
-	size_t LENGTH = 400;
-	rgraph.merge_nodes(ref_acc,LENGTH);
 	int test_node = 31888;
 	std::set<int> temp_adj = rgraph.get_adjacencies(test_node);
 	for(std::set<int>::iterator it = temp_adj.begin() ; it != temp_adj.end() ; it++){
@@ -560,7 +587,7 @@ int do_read_map(int argc, char * argv[]){
 		}else{
 			assert(acc == 0);
 			size_t num = data.get_seq_number_of_acc(acc);
-			std::cout<< "num "<< num<< "ref2 "<< ref2 <<std::endl;
+		//	std::cout<< "num "<< num<< "ref2 "<< ref2 <<std::endl;
 			all_als.at(ref2-num).push_back(p);
 		}
 	}
@@ -570,10 +597,10 @@ int do_read_map(int argc, char * argv[]){
 		std::cout<<als.size()<<std::endl;
 	}
 //Goes through all the reads and for each of them find the best path using Dijkestra graph, the best path should be save in the output file
-	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
+//	std::map<int, std::set<int> > adjacencies = rgraph.get_adjacencies(); //Reference graph
 //	deep_first df(data, adjacencies);//Deep first search algorithm on reference graph nodes to finde sub graph of length MAXGAP
 //	for(size_t i =0; i < all_als.size();i++){
-//	size_t i = 1144;
+//	size_t i = 136;
 	for(size_t i =0; i < all_als.size();i++){
 		std::cout <<"read i  "<< i  <<std::endl;
 		std::vector<pw_alignment> alignments = all_als.at(i);
@@ -618,7 +645,8 @@ int do_read_map(int argc, char * argv[]){
 
 	return 0;
 }
-int check_mapping_result(int argc , char * argv[]){//Use it to test the mapping result over the reads i made out of one certain accession among the existing one on the graph
+//To test the quality of mapping perfect reads over our graph:
+int check_mapping_result(int argc , char * argv[]){//Use it to test the mapping result over the reads i made out of one certain accession among the existing one on the graph 
 	if(argc<7){
 		std::cerr<<"Program: test_mapping" <<std::endl;
 		std::cerr << "Parameters:" << std::endl;
@@ -817,7 +845,7 @@ int do_test_reveal(int argc , char* argv[]){
 	for(std::map<std::string, std::pair<size_t, size_t> >::iterator it = contigs.begin() ; it != contigs.end() ; it++){
 		std::cout << it->first << " " << it->second.first << " " << it->second.second << std::endl;
 	}*/
-	test.read_the_result(mafin, contigs);
+	test.read_the_result(mafin, contigs); //XXX very specific have to manually change it for different output
 	test.compare_with_reveal();
 
 }
@@ -833,8 +861,8 @@ int check_reads(int argc, char* argv[]){
 	std::string maffile(argv[3]);
 	std::string readfasta(argv[4]);
 	all_data data;
-	data.read_fasta_maf(fastafile, maffile);
 	data.read_fasta(readfasta);
+	data.read_fasta_maf(fastafile, maffile);
 	std::ofstream choose_read;
 	choose_read.open ("thisRead.txt");
 	std::string first_read = data.get_read(0);
@@ -1143,6 +1171,9 @@ int main(int argc, char * argv[]) {
 	else if(0==program.compare("gfa_to_fasta")){
 		return gfa_to_fasta(argc,argv);
 	}
+	else if(0 ==program.compare("edge_contraction")){
+		return do_refgraph_edge_contraction(argc,argv);
+	}
 	else if(0==program.compare("map_read")){
 		return do_read_map(argc,argv);
 	}
@@ -1164,6 +1195,10 @@ int main(int argc, char * argv[]) {
 	else if(0 == program.compare("make_kgraph")){
 		return make_k_graph(argc,argv);
 	}
+	else if(0 == program.compare("check_read")){
+		return check_reads(argc,argv);
+	}
+
 	else {
 		usage();
 	}

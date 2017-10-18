@@ -26,7 +26,7 @@ void sequence_contexts<reader>::read_sequence(const std::string & sequence) {
 
 
 template<typename reader>
-void sequence_contexts<reader>::read_sequence(const dnastring & sequence, const size_t & from, const size_t & to) {
+void sequence_contexts<reader>::read_sequence(const dnastring & sequence, const size_t & from, const size_t & to){
 	// assert(from != to); // should only be called for sequences longer than 1 so that we know which strand we are on
 	if(from < to) {
 		size_t len = to - from + 1;
@@ -46,7 +46,7 @@ void sequence_contexts<reader>::read_sequence(const dnastring & sequence, const 
 }
 
 template<typename reader> 
-alignment_contexts<reader>::alignment_contexts(reader & r, size_t level):rd(r), level(level)  {
+alignment_contexts<reader>::alignment_contexts(reader & r, size_t level):rd(r), level(level){
 }
 
 template<typename reader> 
@@ -946,7 +946,7 @@ void dynamic_mc_model::train_sequence_model() {
 
 	vector<size_t> alignments_on_acc(data.numAcc(), 0);
 #pragma omp parallel for schedule(static) num_threads(num_threads)
-	for(size_t a=0; a<data.numAlignments(); ++a) {
+	for(size_t a=0; a<data.numAlignments(); ++a) { //Count the number of alignments on each accession
 		const pw_alignment & al = data.getAlignments().at(a);
 		size_t r1 = al.getreference1();
 		size_t r2 = al.getreference2();
@@ -962,7 +962,7 @@ void dynamic_mc_model::train_sequence_model() {
 	std::vector<unsigned char> alphabet;
 	get_sequence_alphabet(alphabet);
 
-	std::string astring("");
+	std::string astring(""); //Create the initial string of length MAX which contians only the letter A
 	for(size_t i=0; i<MAX_SEQUENCE_MARKOV_CHAIN_LEVEL; ++i) {
 		astring.append("A");
 	}
@@ -1531,8 +1531,7 @@ void dynamic_mc_model::model_bits_to_full_high_values(const std::map< std::strin
 		const std::string & cont = it->first;
 		unsigned char model_index = it->second.first;
 		const std::vector<uint32_t> & bits = it->second.second;
-		size_t len = cont.length();
-
+		size_t len = cont.length(); //Different patterns have different length
 		std::vector<uint32_t> widths;
 		std::vector<uint32_t> highs;
 		std::vector<double> costs;
@@ -2222,7 +2221,7 @@ void dynamic_mc_model::train_alignment_model() {
 	alignments_all_modification_total = std::vector<std::vector<uint32_t> > (numa, std::vector<uint32_t>(numa));
 
 
-	for(size_t i=0; i<data.numAlignments(); ++i) {
+	for(size_t i=0; i<data.numAlignments(); ++i){
 		const pw_alignment & al = data.getAlignment(i);
 		size_t r1 = al.getreference1();
 		size_t r2 = al.getreference2();
