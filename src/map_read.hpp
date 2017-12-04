@@ -12,6 +12,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <list>
 
 /*class deep_first{//It runs deep first algorithm on reference graph to retrun parts of graph that the distance between the first and the last node is less than MAXGAP.
 	public:

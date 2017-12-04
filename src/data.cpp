@@ -262,7 +262,7 @@ char dnastring::index_to_base(size_t index) {
 }
 all_data::all_data() {}
 
-
+/*
 // TODO this function does not have all features of maf function
 void all_data::read_fasta_sam(std::string fasta_all_sequences, std::string sam_all_alignments) {
 	std::cout << "read sam File "<< std::endl;
@@ -310,9 +310,9 @@ void all_data::read_fasta_sam(std::string fasta_all_sequences, std::string sam_a
 	}
 
 	// READ SAM FILE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	/* Achtung
-	 * Library libStatGen creates an output -bs.umfa : if already exist can have some conflict, need to remove it before rerunning this code
-	 */
+	// Achtung
+	// Library libStatGen creates an output -bs.umfa : if already exist can have some conflict, need to remove it before rerunning this code
+	//
 	bool verbose = false;
 	  std::cout << "readAlignment sam file"<<std::endl;
 
@@ -649,8 +649,10 @@ void all_data::read_accknown_fasta_sam(std::string fasta_all_sequences, std::str
 	}
 
 }
+*/
 void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_all_alignments) {
 	std::ifstream fastain(fasta_all_sequences.c_str());
+	std::set<size_t> LENGTH;
 	if(fastain) {
 		std::string str;
 		std::stringstream curseq;
@@ -665,6 +667,7 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 					//		std::cout << curseq.str().at(2416) << curseq.str().at(2417)<<std::endl;
 					//	}
 						insert_sequence(curacc, curname, curseq.str());
+						LENGTH.insert(curseq.str().length());
 					}else{
 						std::cerr << "Warning: A sequence of length zero is skipped " <<std::endl;
 					}
@@ -683,6 +686,7 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 		// store last sequence
 		if(curseq.str().size()!=0){
 			insert_sequence(curacc, curname, curseq.str());
+			LENGTH.insert(curseq.str().length());
 		}else{
 			std::cerr << "Warning: A sequence of length zero is skipped " <<std::endl;
 		}
@@ -697,7 +701,10 @@ void all_data::read_fasta_maf(std::string fasta_all_sequences, std::string maf_a
 	}
 
 	std::cout << "loaded " << sequences.size() << " sequences" << std::endl;
-	
+	for(std::set<size_t>::iterator lenit = LENGTH.begin() ; lenit != LENGTH.end() ; lenit++){
+		std::cout << "l " << *lenit << std::endl;
+
+	}
 //	std::vector< std::multimap< size_t, size_t> > als_on_reference; // sequence index -> begin pos on that sequence -> alignment index
 	// a new multimap for each ref sequence
 //	als_on_reference.resize(sequences.size());
@@ -5038,6 +5045,7 @@ void mc_model::make_all_alignments_patterns(){
 //		}
 
 	}
+/*
 	void mc_model ::get_encoded_member(const pw_alignment & al,size_t center_ref,size_t center_left, encoding_functor & functor,std::ofstream& outs)const{
 		size_t acc1 = data.accNumber(al.getreference1());
 		size_t acc2 = data.accNumber(al.getreference2());
@@ -5073,17 +5081,18 @@ void mc_model::make_all_alignments_patterns(){
 		std::cout << "size of center " << right_2 - left_2 +1;
 	//	std::cout<< " left1: "<< left_1 << "center left: "<< center_left << std::endl;
 	//	std::cout << "center accession: "<< accession << " accession1: "<< acc1 << std::endl;
-	/*	if(al.getreference1()==center_ref && left_1 == center_left){
-			std::cout<< "center is on ref1"<<std::endl;
-			computing_modification_oneToTwo(al, functor);
-			final_context= last_context;	
-		}
-		else{*/
+	//	if(al.getreference1()==center_ref && left_1 == center_left){
+	//		std::cout<< "center is on ref1"<<std::endl;
+	//		computing_modification_oneToTwo(al, functor);
+	//		final_context= last_context;	
+	//	}
+	//	else{
 			std::cout<< "center is always on ref2 " << center_ref << " its accession is " << accession <<std::endl;
 			computing_modification_twoToOne(al, accession ,functor);
 		//	final_context= last_context;	
 	//	}
 	}
+*/
 	void mc_model::get_insertion_high_between_centers(size_t& seq_id ,char & seq_base, char & last_center_base, unsigned int& center_ref, std::string & final_pattern, unsigned int & high, unsigned int & low)const{
 		size_t acc1 = data.accNumber(center_ref);		
 		size_t acc2 = data.accNumber(seq_id);
@@ -5195,9 +5204,9 @@ void mc_model::make_all_alignments_patterns(){
 	void counting_functor::see_context(size_t acc1, size_t acc2, const pw_alignment & p, size_t pos, std::string context, char last_char){
 	//	std::cout<< "accession 1: " << acc1 << " accession 2: " << acc2 << " size: " << pos << " last char: " << dnastring::base_to_index(last_char) << " " << int(last_char)<<std::endl;
 	//	std::cout<< "context is: "<< std::endl;
-	/*	for(size_t i = 0 ; i < context.size(); i++){
-			std::cout<< int(context.at(i))<<std::endl;
-		}*/
+	//	for(size_t i = 0 ; i < context.size(); i++){
+	//		std::cout<< int(context.at(i))<<std::endl;
+	//	}
 		std::map <std::string, std::vector<size_t> >::iterator it1= successive_modification.at(acc1).at(acc2).find(context);
 		if(it1==successive_modification.at(acc1).at(acc2).end()) {
 			successive_modification.at(acc1).at(acc2).insert(std::make_pair(context, std::vector<size_t>((NUM_DELETE+NUM_KEEP+10),1)));
@@ -5210,10 +5219,10 @@ void mc_model::make_all_alignments_patterns(){
 		//	std::cout<<"number of happening "<<int(last_char)<< " after above context is "<< it1->second.at(last_char)<<std::endl;
 	}
 
-/*
-	compute total (sum over all counts)
 
-*/
+//	compute total (sum over all counts):
+
+
 void counting_functor::total_context(){
 	for(size_t i = 0; i < data.numAcc(); i++){
 		for(size_t j = 0; j<data.numAcc(); j++){
@@ -5260,9 +5269,9 @@ double counting_functor::get_total(size_t acc1, size_t acc2, std::string context
 }
 
 			
-/*
-	initialize context counting with 1
-*/   	
+
+//	initialize context counting with 1:
+   	
 	void counting_functor::create_context(size_t acc1, size_t acc2, std::string context) {
 		std::map<std::string, std::vector<size_t> >::iterator it = successive_modification.at(acc1).at(acc2).find(context);
 		if(it==successive_modification.at(acc1).at(acc2).end()) {
@@ -5309,7 +5318,7 @@ double counting_functor::get_total(size_t acc1, size_t acc2, std::string context
 		}
 		return modify;
 	}
-	encoding_functor::encoding_functor(all_data & d, mc_model * a_model, wrapper & wrap, dlib::entropy_encoder_kernel_1 & encode ):data(d),model(a_model),wrappers(wrap),enc(encode){
+/*	encoding_functor::encoding_functor(all_data & d, mc_model * a_model, wrapper & wrap, dlib::entropy_encoder_kernel_1 & encode ):data(d),model(a_model),wrappers(wrap),enc(encode){
 	}
 	void encoding_functor::see_context(size_t acc1, size_t acc2,const pw_alignment & p, size_t pos, std::string context, char last_char){//last_char is infact a encoded pattern!
 		size_t bit = 13;
@@ -5365,5 +5374,5 @@ double counting_functor::get_total(size_t acc1, size_t acc2, std::string context
 		//	}
 		}
 		return alignment_context;
-	}
+	}*/
 	

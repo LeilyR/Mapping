@@ -245,7 +245,7 @@ void ref_graph::find_predecessors_bfs(int & startnode, std::string & refacc, siz
 				std::map<int, std::vector<std::vector<int> > >::iterator this_path = all_paths.find(begin_at);
 				if(this_path !=all_paths.end()){
 					std::map<int, std::vector<std::pair<std::vector<int> , size_t > > >::iterator pre_len = length.find(begin_at);
-					std::cout << pre_len->second << std::endl;
+				//	std::cout << pre_len->second << std::endl;
 					assert(pre_len != length.end());
 					bool EXPANDED = false;
 					for(std::set<int>::iterator pred = this_predecessors.begin() ; pred != this_predecessors.end() ; pred++){
@@ -267,7 +267,7 @@ void ref_graph::find_predecessors_bfs(int & startnode, std::string & refacc, siz
 							std::cout << subpath.size() <<std::endl;
 							for(size_t i =0;i < subpath.size();i++){
 								subpath.at(i).push_back(begin_at);
-								std::cout<< "Here: "<<subpath.at(i)<<std::endl;
+							//	std::cout<< "Here: "<<subpath.at(i)<<std::endl;
 							}
 							if(subpath.size()==0){
 								std::vector<int> temp;
@@ -302,7 +302,7 @@ void ref_graph::find_predecessors_bfs(int & startnode, std::string & refacc, siz
 								}
 								if(p.second>=max){
 									std::cout << "MAX reached! "<<std::endl;
-									std::cout << p.first<<std::endl;
+								//	std::cout << p.first<<std::endl;
 									std::vector<int> add_to_path = p.first;
 								//	for(size_t n = 0; n < add_to_path.size() ; n++){
 								//		pre_nodes_on_paths.insert(add_to_path.at(n));
@@ -312,9 +312,9 @@ void ref_graph::find_predecessors_bfs(int & startnode, std::string & refacc, siz
 									pre_paths.insert(add_to_path);
 									bool SEEN = false;
 									for(size_t j =0; j < from_adj->second.size() ;j++){
-										if(from_adj->second.size()== 6){
-											std::cout<< from_adj->second.at(j)<<std::endl;
-										}
+									//	if(from_adj->second.size()== 6){
+									//		std::cout<< from_adj->second.at(j)<<std::endl;
+									//	}
 										if(from_adj->second.at(j)==p.first){
 											from_adj->second.erase(from_adj->second.begin()+j);
 											SEEN = true;
@@ -339,10 +339,10 @@ void ref_graph::find_predecessors_bfs(int & startnode, std::string & refacc, siz
 			}
 		}
 		std::cout << "HERE!!" << pre_paths.size() <<std::endl;
-		for(std::set<vector<int> >::iterator it = pre_paths.begin() ; it != pre_paths.end() ; it++){
-			std::cout << *it << std::endl;
-			std::cout << " "<<std::endl;
-		}
+	//	for(std::set<vector<int> >::iterator it = pre_paths.begin() ; it != pre_paths.end() ; it++){
+	//		std::cout << *it << std::endl;
+	//		std::cout << " "<<std::endl;
+	//	}
 		for(std::map<int,std::vector<std::vector<int> > >::iterator it = all_paths.begin() ; it != all_paths.end() ; it++){
 			std::vector<std::vector<int> >path = it->second;
 			for(size_t i =0; i < path.size() ; i++){
@@ -354,7 +354,7 @@ void ref_graph::find_predecessors_bfs(int & startnode, std::string & refacc, siz
 				//		pre_nodes_on_paths.insert(path.at(i).at(j));
 				//	}
 				}
-				std::cout << "this path "<< path.at(i)<<std::endl;
+			//	std::cout << "this path "<< path.at(i)<<std::endl;
 			}
 		}
 	}
@@ -652,7 +652,7 @@ void ref_graph::deep_first_search(int & startnode, std::string & refacc, size_t 
 		std::cout<< "on node " << it->first << " " << it->second.size() << std::endl;
 		for(std::set<std::pair<std::vector<int>,size_t> >::iterator it1 = it->second.begin() ; it1!=it->second.end() ; it1++){
 			std::pair<std::vector<int>,size_t> this_pair = *it1;
-			std::cout<< this_pair.first<<std::endl;
+		//	std::cout<< this_pair.first<<std::endl;
 			std::cout<< "with length "<< this_pair.second <<std::endl;
 		}
 	}
@@ -708,7 +708,7 @@ void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , st
 				for(std::set<std::pair<std::vector<int>,size_t> >::iterator len_it = len->second.begin() ; len_it != len->second.end() ;len_it++){
 					std::pair<std::vector<int>,size_t> this_pair = *len_it;
 					std::cout<<"this pair first  " << std::endl;
-					std::cout << this_pair.first << std::endl;
+				//	std::cout << this_pair.first << std::endl;
 					std::map<int,bool>::iterator it2 = visited.find(*adj);
 					if(this_pair.second < MAXGAP){
 						size_t length = this_pair.second + adjlength;
@@ -723,8 +723,8 @@ void ref_graph::look_for_neighbors(int & node, std::map<int,bool> & visited , st
 							 adj_len = parent_length.find(adjacent);
 						}
 						assert(adj_len != parent_length.end());
-						std::cout << "adjacent "<< adjacent << std::endl;
-						std::cout<< "cur pair "<<cur_pair <<std::endl;
+					//	std::cout << "adjacent "<< adjacent << std::endl;
+					//	std::cout<< "cur pair "<<cur_pair <<std::endl;
 						adj_len->second.insert(cur_pair);
 						if(it2->second == false){
 						//	LESSTHANMAX = true;
@@ -1007,7 +1007,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 					//	std::cout << subpath.size() <<std::endl;
 						for(size_t i =0;i < subpath.size();i++){
 							subpath.at(i).push_back(startnode);
-							std::cout<< "Here: "<<subpath.at(i)<<std::endl;
+						//	std::cout<< "Here: "<<subpath.at(i)<<std::endl;
 						}
 						if(subpath.size()==0){
 							std::vector<int> temp;
@@ -1024,8 +1024,8 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 						for(size_t i =0;i < subpath.size();i++){
 							from_adj->second.push_back(subpath.at(i));
 						}
-						std::cout << "from adj is " << from_adj->second.size()<<std::endl;
-						std::cout << from_adj->second << std::endl;
+					//	std::cout << "from adj is " << from_adj->second.size()<<std::endl;
+					//	std::cout << from_adj->second << std::endl;
 						std::map<int, std::vector<std::pair<std::vector<int> , size_t > > >::iterator len = length.find(adjacent);
 						std::vector<std::pair<std::vector<int>,size_t> > this_pair;
 						if(len == length.end()){
@@ -1044,7 +1044,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 							}
 							if(p.second>=MAXGAP){
 								std::cout << "MAX reached! "<<std::endl;
-								std::cout << p.first<<std::endl;
+								//std::cout << p.first<<std::endl;
 								std::vector<int> add_to_path = p.first;
 								for(size_t n = 0; n < add_to_path.size() ; n++){
 									nodes_on_paths.insert(add_to_path.at(n));
@@ -1056,7 +1056,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 								bool SEEN = false;
 								for(size_t j =0; j < from_adj->second.size() ;j++){
 								//	if(from_adj->second.size()== 6){
-										std::cout<< from_adj->second.at(j)<<std::endl;
+									//	std::cout<< from_adj->second.at(j)<<std::endl;
 								//	}
 									if(from_adj->second.at(j)==p.first){
 										from_adj->second.erase(from_adj->second.begin()+j);
@@ -1078,9 +1078,9 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 						std::map<int, std::vector<std::vector<int> > >::iterator from_adj = all_paths.find(startnode);
 						if(from_adj != all_paths.end()){
 							std::cout << from_adj->second.size() <<std::endl;
-							for(size_t j = 0; j < from_adj->second.size() ; j++){
-								std::cout << from_adj->second.at(j)<<std::endl;
-							}
+						//	for(size_t j = 0; j < from_adj->second.size() ; j++){
+						//		std::cout << from_adj->second.at(j)<<std::endl;
+						//	}
 							std::map<int, std::vector<std::pair<std::vector<int> , size_t > > >::iterator len = length.find(startnode);
 							assert(len != length.end());
 							std::set<std::vector<int> > seenvectors;
@@ -1092,7 +1092,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 										//Get a sub vector from this position on 
 										size_t index = std::distance(it->second.at(p).begin(), position);
 										std::vector<int> v1(it->second.at(p).begin() + index, it->second.at(p).end());
-										std::cout << "v1 "<< v1 <<std::endl;
+									//	std::cout << "v1 "<< v1 <<std::endl;
 										std::set<std::vector<int> >::iterator seen = seenvectors.find(v1);
 										if(seen == seenvectors.end()){
 											seenvectors.insert(v1);
@@ -1101,7 +1101,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 											for(size_t j = 0; j < from_adj->second.size() ; j++){
 												std::vector<int> concatenation = from_adj->second.at(j);
 												concatenation.insert(concatenation.end(), v1.begin(), v1.end());
-												std::cout << "concat: " << concatenation << std::endl;
+											//	std::cout << "concat: " << concatenation << std::endl;
 												it->second.push_back(concatenation);
 												//TODO check and then add the length!
 												std::map<int, std::vector<std::pair<std::vector<int> , size_t > > >::iterator len1 = length.find(it->first);
@@ -1126,7 +1126,7 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 		//	}else{
 		//		std::cout << "end of a path "<<std::endl;
 		//	}
-			std::cout << "queue " << queue << std::endl;
+		//	std::cout << "queue " << queue << std::endl;
 		}
 	//	std::cout << "HERE!!" << paths.size() <<std::endl;
 	//	for(std::set<vector<int> >::iterator it = paths.begin() ; it != paths.end() ; it++){
@@ -1157,12 +1157,12 @@ void ref_graph::bfs(int & startnode, std::string & refacc, size_t & right_on_ref
 		//	nodes_on_paths.insert(it->first);		
 		}
 	}
-	std::cout << "nodes on path size is " << nodes_on_paths.size()<<std::endl;
+//	std::cout << "nodes on path size is " << nodes_on_paths.size()<<std::endl;
 
 }
 void ref_graph::delete_path(std::vector<int> & this_path){
 	//DELETE THEM FROM DY_ADJ!
-	std::cout << "delete "<< this_path <<std::endl;
+//	std::cout << "delete "<< this_path <<std::endl;
 	for(size_t i = 0; i < this_path.size()-1 ; i++){
 		std::map<int , std::set<int> >::iterator it = dynamic_adjacencies.find(this_path.at(i));
 		assert(it != dynamic_adjacencies.end());
@@ -1466,7 +1466,7 @@ void ref_graph::merge_nodes_bfs(std::string & ref_acc , size_t & LENGTH){//XXX I
 		}
 	}
 	for(std::map<std::vector<int>, int>::iterator it = old_edges.begin() ; it != old_edges.end() ; it++){
-		std::cout << "old edges: " << it->first  << std::endl;
+	//	std::cout << "old edges: " << it->first  << std::endl;
 		std::cout << "index " << it->second <<std::endl;
 	}
 

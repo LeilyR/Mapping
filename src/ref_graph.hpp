@@ -3,6 +3,7 @@
 
 #include "data.hpp"
 #include "pw_alignment.hpp"
+#include <list>
 //#include "hash.hpp"
 #define MAXGAP 400
 #define K 25

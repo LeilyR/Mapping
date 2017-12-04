@@ -13,20 +13,22 @@
 #include <algorithm>
 
 #include "pw_alignment.hpp"
-#include "dlib/entropy_encoder/entropy_encoder_kernel_1.h"
-#include "dlib/entropy_decoder/entropy_decoder_kernel_1.h"
+
+using namespace std;
+//#include "dlib/entropy_encoder/entropy_encoder_kernel_1.h"
+//#include "dlib/entropy_decoder/entropy_decoder_kernel_1.h"
 
 //ICL library header files: 
-#include <boost/icl/discrete_interval.hpp>
-#include <boost/icl/interval_map.hpp>
-#include <boost/icl/interval_set.hpp>
+//#include <boost/icl/discrete_interval.hpp>
+//#include <boost/icl/interval_map.hpp>
+//#include <boost/icl/interval_set.hpp>
 
 // Library to read Sam File
-#include "SamFile.h"
-#include "SamValidation.h"
-#include "Cigar.h"
-#include "GenomeSequence.h"
-#include <SamFlag.h>
+//#include "SamFile.h"
+//#include "SamValidation.h"
+//#include "Cigar.h"
+//#include "GenomeSequence.h"
+//#include <SamFlag.h>
 
 #include <boost/iostreams/stream.hpp>
 #include <boost/tokenizer.hpp>
@@ -153,7 +155,7 @@ public:
 	const pw_alignment * get_al_at_left_end(size_t ref1, size_t ref2, size_t left1, size_t left2) const;
 	std::multimap<size_t, const pw_alignment &>& get_als_on_reference(size_t sequence) ;
 	const std::multimap<size_t, const pw_alignment & >& get_als_on_reference_const(size_t sequence) const ;
-	const boost::icl::interval_map<size_t, std::set<const pw_alignment*> > & get_alignments_interval(size_t sequence)const;
+//	const boost::icl::interval_map<size_t, std::set<const pw_alignment*> > & get_alignments_interval(size_t sequence)const;
 	void test_multimaps()  ;
 	bool checkAlignments(const pw_alignment & p)const;
 
@@ -271,11 +273,11 @@ class mc_model;
 
 class cost_functor : public abstract_context_functor {
 	public:
-	cost_functor(all_data &, const std::vector<vector<std::map<std::string, vector<double> > > >&);
+	cost_functor(all_data &, const std::vector<std::vector<std::map<std::string,std::vector<double> > > >&);
 	virtual void see_context(size_t acc1, size_t acc2, const pw_alignment & p, size_t pos, std::string context, char last_char);
 	double get_modify(const pw_alignment & p, size_t acc1, size_t acc2)const;
 	private:
-	std::vector<vector< std::map<std::string, vector<double> > > >  modification; 
+	std::vector<std::vector< std::map<std::string, std::vector<double> > > >  modification; 
 	all_data & data;
 	double modify1;
 	double modify2;	
@@ -287,7 +289,7 @@ class adding_functor : public abstract_context_functor {
 	public:
 
 };
-class encoding_functor : public abstract_context_functor {
+/*class encoding_functor : public abstract_context_functor {
 	public:
 	encoding_functor(all_data& , mc_model* , wrapper &, dlib::entropy_encoder_kernel_1 &);
 	virtual void see_context(size_t acc1, size_t acc2,const pw_alignment& p, size_t pos, std::string context, char last_char);	
@@ -302,7 +304,7 @@ class encoding_functor : public abstract_context_functor {
 	std::string alignment_pattern;//shayadam behtar bashe ye std::vector of string tarif konam
 	std::map<std::string, std::vector<double> > alignment_context;
 
-};
+};*/
 
 class clustering_functor : public abstract_context_functor{
 	public:
@@ -355,8 +357,8 @@ class mc_model{
 		const std::map<std::string, std::vector<unsigned int> >& get_highValue(size_t acc1, size_t acc2)const;
 		void computing_modification_in_cluster(std::string center, std::string member)const;
 		size_t modification_length(char mod)const;
-		void get_encoded_member(const pw_alignment & al, size_t center_ref, size_t center_left, encoding_functor & functor,std::ofstream&)const;
-		void get_encoded_member_long_center(const pw_alignment & , unsigned int& , encoding_functor & functor,std::ofstream&)const;
+	//	void get_encoded_member(const pw_alignment & al, size_t center_ref, size_t center_left, encoding_functor & functor,std::ofstream&)const;
+	//	void get_encoded_member_long_center(const pw_alignment & , unsigned int& , encoding_functor & functor,std::ofstream&)const;
 		void get_insertion_high_between_centers(size_t& seq_id ,char & seq_base, char & last_center_base, unsigned int& center_ref,std::string & ,unsigned int& high, unsigned int& low)const;
 		void get_a_keep(unsigned int & , unsigned int & , size_t & , std::vector<unsigned int> & , std::vector<unsigned int> & )const;
 	private:

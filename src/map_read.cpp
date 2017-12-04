@@ -254,10 +254,10 @@ void als_components<T>::finding_successors_on_subref(size_t & comp, const pw_ali
 		}
 		std::cout << "neighbor's name is " << nex_name <<std::endl;
 		nex_al.print();
-		std::cout << "seen indices "<< std::endl;
-		for(std::map<std::pair<int,int> , std::pair<size_t , double> >::iterator test = seen_indices.begin() ; test != seen_indices.end() ;test++){
-			std::cout << test->first <<std::endl;
-		}
+	//	std::cout << "seen indices "<< std::endl;
+	//	for(std::map<std::pair<int,int> , std::pair<size_t , double> >::iterator test = seen_indices.begin() ; test != seen_indices.end() ;test++){
+	//		std::cout << test->first <<std::endl;
+	//	}
 		std::map<std::pair<int, int>, std::set<size_t> >::iterator edge = seen_edges.find(std::make_pair(12,13));
 		if(edge != seen_edges.end()){
 			std::cout << "12 - 13 is "<< std::endl;
@@ -2115,7 +2115,7 @@ void als_components<T>::append_nodes(const std::set<int> & bfs_nodes ,int & name
 		std::string str1;
 		std::vector<std::string> this_string;
 		std::cout<< "this path size "<<this_path.size()<<std::endl;
-		std::cout << this_path <<std::endl;
+	//	std::cout << this_path <<std::endl;
 		if(this_path.size()>2){
 			for(size_t j = 1; j < this_path.size()-1; j++){
 				std::stringstream ss;
@@ -2852,7 +2852,7 @@ void als_components<T>::make_first_nw_als(size_t & comp, const pw_alignment & cu
 				}
 			}else{
 		//	if(j != 0 && j != this_p.size()-1){//j != 0 //Type is different from j = 0, in this case we wanna see all the ref, no matter if we get only gap on read!
-				std::cout << pre_path <<std::endl;
+		//		std::cout << pre_path <<std::endl;
 				bool NOEDGE = false;
 				std::map<int, std::set<int> >::iterator SEEN = seen_node.find(this_p.at(j));
 				if(SEEN != seen_node.end()){
@@ -4475,7 +4475,7 @@ void als_components<T>::heap_dijkstra(DotFibonacciHeap & myHeap, const pw_alignm
 			this_p.push_back(temp.at(j));
 			if(temp.at(j)==next_name){
 				PATH.insert(this_p);
-				std::cout << this_p <<std::endl;
+			//	std::cout << this_p <<std::endl;
 				for(size_t k = 0; k < this_p.size();k++){
 					nodes_on_paths.insert(this_p.at(k));
 				}

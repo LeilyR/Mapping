@@ -1,0 +1,17 @@
+This program is presenting a pipeline to map long sequencing reads on a graph
+
+1. Compile:
+	../src
+	make
+2. Prepare the input data: 
+	../src/mapping fasta_prepare output_read_and_ref.fasta input_read.fasta input_ref.fasta
+	../src/mapping fasta_prepare output_read.fasta input_read.fasta
+	../src/mapping fasta_prepare output_ref.fasta input_ref.fasta
+3. Generating hits by making pairwise alignments:
+	Any pairwise aligner can used here to detect the alignments between output_read.fasta and  output_ref.fasta
+	Its output as a Maf file is used for the nest step. (alignments.maf)
+4. Mapping:
+	../src/mapping ref.gfa(nogfa) ref.dot(nodot)  output_read_and_ref.fasta alignments.maf mapping_output numthread(optional)
+
+	Either of dot or gfa is enough, use nogfa if not entering a gfa file , use nodot if not using a dot file.
+	

@@ -38,14 +38,7 @@
 
 
 /**
-General TODO
-
-Look at diversity within clusters. Can this diversity be used to differentiate between orthologous and paralogous groups,
-should they be treated differently in mapping? Some more stringent approach to place repeat instances? Discuss this with Felix again?
-
-Maybe another round of AP-clustering after all reads are aligned? Maybe include not only reads, but also all origingal sequences in that cluster
-maybe do multiple alignments?
-
+An algorith is introduced to map long sequencing reads against a graph as a multi-genome reference
 **/
 
 void usage() {
@@ -53,7 +46,7 @@ void usage() {
 	std::cerr << "Usage:" << std::endl;
 }
 
-int do_fasta_prepare(int argc, char * argv[]) {
+int do_fasta_prepare(int argc, char * argv[]) { //It is generating a Fasat file which is compatible with the mapping program. 
 
 	if(argc < 4) {
 		usage();
@@ -461,7 +454,7 @@ int do_read_map(int argc, char * argv[]){
 
 	typedef dynamic_mc_model use_model;
 //	typedef overlap_interval_tree<located_alignment> overlap_type;
-	if(argc < 9){ 
+	if(argc < 7){ 
 		std::cerr << "Program: map_read" << std::endl;
 		std::cerr << "Parameters:" << std::endl;
 		std::cerr << "* Ref(graph) gfa file ('nogfa' if not using gfa)" << std::endl;
@@ -469,14 +462,14 @@ int do_read_map(int argc, char * argv[]){
 		std::cerr << "* Read+Ref fasta file" << std::endl; //By running fasta_prepare on the original ref and read file(original means before fasta_prepare on eahc of them)
 		std::cerr << "* alignment maf file "<<std::endl; //I used LAST (make alignemnt between Ref.fasta and Read.fasta)
 		std::cerr << "* output maf file " << std::endl; 
-		std::cerr << "genomes and reads fasta "<<std::endl;
-		std::cerr << "genomes and reads maf file "<< std::endl;
+	//	std::cerr << "genomes and reads fasta "<<std::endl;
+	//	std::cerr << "genomes and reads maf file "<< std::endl;
 		std::cerr << "* num_threads(optional, defult is 1)" <<std::endl;
 		return 1;
 	}
 	size_t num_threads = 1;
-	if(argc ==11){
-		num_threads = std::atoi(argv[9]);
+	if(argc ==9){
+		num_threads = std::atoi(argv[7]);
 	}
 	std::string refgfa(argv[2]);
 	std::string refdotfile(argv[3]);
@@ -487,8 +480,8 @@ int do_read_map(int argc, char * argv[]){
 	output << "##maf version=1 " << std::endl;
 	output << "# Result of mapping over a graph " << std::endl;
 	output << "#" << std::endl;
-	std::string genomes_and_reads_fasta(argv[7]);
-	std::string genomes_and_reads_maf(argv[8]);
+//	std::string genomes_and_reads_fasta(argv[7]);
+//	std::string genomes_and_reads_maf(argv[8]);
 	
 /*	all_data data1; //Just to test if model returns more reliable cost!
 	data1.read_fasta_maf_forward_read_only(genomes_and_reads_fasta, genomes_and_reads_maf);

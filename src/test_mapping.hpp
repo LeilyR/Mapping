@@ -33,10 +33,10 @@ class map_check{
 	void print_graph(){
 		for(std::map<unsigned int , std::vector<std::string> >::iterator it=clusters.begin(); it!= clusters.end(); it++){
 			std::cout<< it->first<< std::endl;
-			if(it->first==8){
-				std::cout<<"if 8 "<<std::endl;
-				std::cout<< it->second << std::endl;
-			}
+		//	if(it->first==8){
+		//		std::cout<<"if 8 "<<std::endl;
+		//		std::cout<< it->second << std::endl;
+		//	}
 		}
 	}
 	const std::map<unsigned int , std::vector<std::string> > & get_clusters()const;
