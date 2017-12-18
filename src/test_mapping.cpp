@@ -457,7 +457,7 @@ void test_sim_reads_mapping::read_sim_maffile(std::ifstream & sim_maffile, std::
 			size_t begin2 = size_t(std::stoi(parts2.at(2)));
 			size_t end2 = size_t(std::stoi(parts2.at(3)))-1;
 			std::cout << "on read " << count << "there are " << size_t(std::stoi(parts2.at(3))) <<std::endl;
-			if(count < 56){
+			if(count < 376){
 				base += size_t(std::stoi(parts2.at(3)));
 			}
 			std::string str2 = parts2.at(6);
@@ -510,7 +510,7 @@ void test_sim_reads_mapping::this_part_position_on_seq(bool & direction, size_t 
 		std::string ref1 = p.get_al_ref1();
 		std::string ref2 = p.get_al_ref2();
 		assert(ref1.length() == ref2.length());
-		int counter1 = -1;
+		int counter1 = 0;
 		int counter2 = -1;
 		int column = -1;
 		size_t begin_col = 0;
@@ -558,7 +558,8 @@ void test_sim_reads_mapping::this_part_position_on_seq(bool & direction, size_t 
 		}
 		std::cout << "begin col "<< begin_col << " end col "<< end_col <<std::endl;
 		column = -1;
-		if(p.getbegin2()<p.getend2()){
+		if(p.getbegin2()<p.getend2()){ //XXX Check!
+		//if(p.getbegin1()<p.getend1()){
 
 			for(size_t i =0; i < ref1.length(); i++){
 				column ++;
@@ -566,29 +567,38 @@ void test_sim_reads_mapping::this_part_position_on_seq(bool & direction, size_t 
 					counter1 ++;
 				}
 				if(column == begin_col){
+					std::cout << "on begin " <<std::endl;
 					if(ref1.at(i)=='-'){ //TODO +1 could make more sense
 						if(counter1 > 0){
 							start = counter1-1;
 						}else{	
-						//	std::cout << counter1 <<std::endl;
-							assert(counter1 ==-1);
+							std::cout << counter1 << "equal 0" <<std::endl;
+							assert(counter1 ==0);
 							start = 0;
 						}
 					}else{
-						start = counter1;
+						start = counter1-1;
 					}
+					std::cout << "counter1 " <<counter1 <<std::endl;
 				}
 				if(column == end_col){
+					std::cout << "on end " <<std::endl;
 					if(ref1.at(i)=='-'){
 						if(counter1 > 0){
 						//	end = counter1-1;
-							end = counter1; //XXX Just changed it!
+							std::cout << "counter1 " <<counter1 <<std::endl;
+							end = counter1-1; //XXX Just changed it!
 						}else{	
-							assert(counter1 ==-1);
+							assert(counter1 ==0);
 							end = 0;
 						}
 					}else{
-						end = counter1;
+						if(counter1>=2){
+							end = counter1-2;
+						}else{
+							assert(counter1 == 1);
+							end = counter1 -1;
+						}
 					}
 					break;
 				}
@@ -603,16 +613,16 @@ void test_sim_reads_mapping::this_part_position_on_seq(bool & direction, size_t 
 					std::cout << "pos "<< ref1.length() << " " << end_col << std::endl;
 					if(ref1.at(i)=='-'){
 						std::cout << "is on gap " << column <<std::endl;
-						if(counter1 >= 0){
+						if(counter1 > 0){
 							start = counter1+1;
 							std::cout << counter1 <<std::endl;
 						}else{	
 						//	std::cout << counter1 <<std::endl;
-							assert(counter1 ==-1);
+							assert(counter1 ==0);
 							start = 0;
 						}
 					}else{
-						start = counter1;
+						start = counter1-1;
 					}
 				}
 				if(column == ref1.length()-1-begin_col){
@@ -621,13 +631,13 @@ void test_sim_reads_mapping::this_part_position_on_seq(bool & direction, size_t 
 
 						if(counter1 > 0){
 						//	end = counter1-1;
-							end = counter1; //XXX Just changed it
+							end = counter1-1; //XXX Just changed it
 						}else{	
-						//	assert(counter1 ==-1);
+							assert(counter1 ==0);
 							end = 0;
 						}
 					}else{
-						end = counter1;
+						end = counter1-1;
 					}
 					break;
 				}
@@ -699,6 +709,8 @@ void test_sim_reads_mapping::check_output(std::ifstream & mapping_maf, std::map<
 					size_t temp_ref_id = ref_id;
 					compare_with_reveal_graph(nodes_on_ref_graph, temp_ref_id,start_on_seq,end_on_seq,error, GAPONLY);	
 				}
+				std::cout << "total error1 "<< error << std::endl;
+
 			}
 		}
 
@@ -787,6 +799,7 @@ void test_sim_reads_mapping::compare_with_my_graph(unsigned int & ref_id, size_t
 }
 void test_sim_reads_mapping::compare_with_reveal_graph(std::map<size_t, std::pair<size_t,size_t> > & nodes_on_ref_graph, size_t & ref_id,size_t & begin, size_t & end,size_t & error, bool & GAPONLY){
 	std::map<size_t, std::pair<size_t,size_t> >::iterator it = nodes_on_ref_graph.find(ref_id);
+	std::cout << "between "<< it->second.first << " and "<< it->second.second <<std::endl;
 	if(it == nodes_on_ref_graph.end()){
 		std::cout<< "mapping error! wrong node"<<std::endl;
 		error += end - begin +1;
@@ -794,10 +807,12 @@ void test_sim_reads_mapping::compare_with_reveal_graph(std::map<size_t, std::pai
 		if(GAPONLY == false){
 			if(begin >= it->second.first && end <=it->second.second){
 				std::cout<< "correct!" <<std::endl;
-			}else if(begin >= it->second.first && end >it->second.second){
+			}else if(begin > it->second.second){
+				error += end-begin+1;
+			}else if(begin >= it->second.first && begin < it->second.second && end >it->second.second){
 				error += end-it->second.second;	
 				std::cout<< "small error "<< end-it->second.second <<std::endl;
-			}else if(begin < it->second.first && end <=it->second.second){
+			}else if(begin < it->second.first && end > it->second.first && end <=it->second.second){
 				error += it->second.first - begin;
 				std::cout<< "small error " << it->second.first - begin << std::endl;
 			}else if(begin < it->second.first && end > it->second.second){
@@ -881,8 +896,8 @@ void test_reveal::read_gfa(std::ifstream & gfa){
 			strsep(parts.at(4),":",ref_parts);
 			to = from + parts.at(2).length()-1;
 			std::cout << ref_parts.at(2)<<std::endl;
-		//	if(ref_parts.at(2).at(0)=='0'){ //XXX Specific! ecoli
-			if(ref_parts.at(2).at(0)=='1'){ //XXX For A.thaliana
+			if(ref_parts.at(2).at(0)=='0'){ //XXX Specific! ecoli
+		//	if(ref_parts.at(2).at(0)=='1'){ //XXX For A.thaliana
 				std::cout << "id " << id <<std::endl;
 				ref_graph_nodes.insert(std::make_pair(id,std::make_pair(from,to)));
 				from = to + 1;
